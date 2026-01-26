@@ -1,0 +1,6 @@
+[submodule "components/lilygo_device_driver"]
+	path = components/lilygo_device_driver
+	url = https://github.com/Xinyuan-LilyGO/lilygo_device_driver.git
+[submodule "components/cpp_bus_driver"]
+	path = components/cpp_bus_driver
+	url = https://github.com/Llgok/cpp_bus_driver.git
