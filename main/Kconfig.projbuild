@@ -12,5 +12,9 @@ menu "Example Configuration"
         default EXAMPLE_BUILD_IIC_SCAN
             config EXAMPLE_BUILD_IIC_SCAN
                 bool "iic_scan"
+            config EXAMPLE_BUILD_SCREEN_LVGL
+                bool "screen_lvgl"
+            config EXAMPLE_BUILD_XL9555
+                bool "xl9555"
     endchoice
 endmenu

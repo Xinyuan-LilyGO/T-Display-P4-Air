@@ -1,8 +1,10 @@
 #这里选择你需要编译的项目
 if(CONFIG_EXAMPLE_BUILD_IIC_SCAN)
     set(project_path "examples/iic_scan/")
-elseif(CONFIG_EXAMPLE_BUILD_BQ27220)
-    set(project_path "examples/bq27220/")
+elseif(CONFIG_EXAMPLE_BUILD_SCREEN_LVGL)
+    set(project_path "examples/screen_lvgl/")
+elseif(CONFIG_EXAMPLE_BUILD_XL9555)
+    set(project_path "examples/xl9555/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
