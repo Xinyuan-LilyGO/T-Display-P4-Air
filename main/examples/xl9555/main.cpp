@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:40:30
- * @LastEditTime: 2026-02-02 18:03:44
+ * @LastEditTime: 2026-02-03 09:31:16
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -19,14 +19,17 @@ extern "C" void app_main(void)
 
     Xl9555->begin();
     Xl9555->pin_mode(Cpp_Bus_Driver::Xl95x5::Pin::IO6, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_mode(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_mode(Cpp_Bus_Driver::Xl95x5::Pin::IO7, Cpp_Bus_Driver::Xl95x5::Mode::INPUT);
 
     while (1)
     {
         Xl9555->pin_write(Cpp_Bus_Driver::Xl95x5::Pin::IO6, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+        Xl9555->pin_write(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
         printf("xl9555 io7: %d\n", Xl9555->pin_read(Cpp_Bus_Driver::Xl95x5::Pin::IO7));
         vTaskDelay(pdMS_TO_TICKS(1000));
         Xl9555->pin_write(Cpp_Bus_Driver::Xl95x5::Pin::IO6, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9555->pin_write(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Value::LOW);
         printf("xl9555 io7: %d\n", Xl9555->pin_read(Cpp_Bus_Driver::Xl95x5::Pin::IO7));
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
