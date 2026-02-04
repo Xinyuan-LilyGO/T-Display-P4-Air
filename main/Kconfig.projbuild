@@ -16,6 +16,8 @@ menu "Example Configuration"
                 bool "screen_lvgl"
             config EXAMPLE_BUILD_XL9555
                 bool "xl9555"
+            config EXAMPLE_BUILD_AXP517
+                bool "axp517"
     endchoice
 
     config ENABLE_USB_DISPLAY

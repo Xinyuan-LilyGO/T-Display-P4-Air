@@ -5,6 +5,8 @@ elseif(CONFIG_EXAMPLE_BUILD_SCREEN_LVGL)
     set(project_path "examples/screen_lvgl/")
 elseif(CONFIG_EXAMPLE_BUILD_XL9555)
     set(project_path "examples/xl9555/")
+elseif(CONFIG_EXAMPLE_BUILD_AXP517)
+    set(project_path "examples/axp517/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
