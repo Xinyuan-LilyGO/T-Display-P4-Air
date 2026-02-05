@@ -7,6 +7,8 @@ elseif(CONFIG_EXAMPLE_BUILD_XL9555)
     set(project_path "examples/xl9555/")
 elseif(CONFIG_EXAMPLE_BUILD_AXP517)
     set(project_path "examples/axp517/")
+elseif(CONFIG_EXAMPLE_BUILD_AW86224)
+    set(project_path "examples/aw86224/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 

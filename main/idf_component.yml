@@ -1,3 +1,5 @@
 dependencies:
   lvgl/lvgl:
     version: "9.4.0"
+    matches:
+    - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL} == True"
