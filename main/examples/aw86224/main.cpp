@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-04 17:12:29
- * @LastEditTime: 2026-02-05 09:36:14
+ * @LastEditTime: 2026-02-05 13:41:42
  * @License: GPL 3.0
  */
 
@@ -23,17 +23,14 @@ extern "C" void app_main(void)
     printf("Ciallo\n");
 
     Axp517->begin();
+    
     Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
+
     Xl9555->begin();
 
     Xl9555->pin_mode(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(1000));
 
     Aw86224_Iic_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
 
