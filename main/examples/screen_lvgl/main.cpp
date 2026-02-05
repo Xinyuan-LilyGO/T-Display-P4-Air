@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:36:09
- * @LastEditTime: 2026-02-03 14:56:35
+ * @LastEditTime: 2026-02-05 13:42:02
  * @License: GPL 3.0
  */
 
@@ -17,7 +17,8 @@
 // LVGL library is not thread-safe, this example will call LVGL APIs from different tasks, so use a mutex to protect it
 static _lock_t lvgl_api_lock;
 
-auto Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_0);
+auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
+auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
 auto Mipi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Mipi>(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_MIPI_DSI_HSYNC, SCREEN_MIPI_DSI_HBP, SCREEN_MIPI_DSI_HFP,
                                                                 SCREEN_MIPI_DSI_VSYNC, SCREEN_MIPI_DSI_VBP, SCREEN_MIPI_DSI_VFP, SCREEN_DATA_LANE_NUM,
                                                                 [](uint8_t format) -> Cpp_Bus_Driver::Hardware_Mipi::Color_Format
@@ -32,24 +33,13 @@ auto Mipi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Mipi>(SCREEN_WIDTH, SC
                                                                         return Cpp_Bus_Driver::Hardware_Mipi::Color_Format::RGB565;
                                                                     } }(SCREEN_BITS_PER_PIXEL));
 
-auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Iic_Bus, XL9555_IIC_ADDRESS);
+auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
+auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
 auto Screen = std::make_unique<Cpp_Bus_Driver::Hi8561>(Mipi_Bus);
 
 auto Esp32p4 = std::make_unique<Cpp_Bus_Driver::Tool>();
 
 extern "C" void example_lvgl_demo_ui(lv_display_t *disp);
-
-void Iic_Scan(void)
-{
-    std::vector<uint8_t> address;
-    if (Iic_Bus->scan_7bit_address(&address) == true)
-    {
-        for (size_t i = 0; i < address.size(); i++)
-        {
-            printf("discovered iic devices[%u]: %#x\n", i, address[i]);
-        }
-    }
-}
 
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
@@ -382,15 +372,21 @@ void color_grid_buffer(void *buffer, int buffer_width, int buffer_height, int pi
 extern "C" void app_main(void)
 {
     printf("Ciallo\n");
+
+    Axp517->begin();
+
+    Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
+
     Xl9555->begin();
 
     Xl9555->pin_mode(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
     Lilygo_Device_Driver::Init_Ldo_Channel_Power(3, 2500);
 
