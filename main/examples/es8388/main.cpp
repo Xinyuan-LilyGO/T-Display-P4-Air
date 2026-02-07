@@ -38,6 +38,10 @@ extern "C" void app_main(void)
 
     Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
+    Xl9555->pin_mode(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+
+    Xl9555->pin_write(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+
     Es8388_Iic_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
     Es8388_Iic_Bus->begin(-1, ES8388_IIC_ADDRESS);
 
