@@ -28,9 +28,9 @@ extern "C" void app_main(void)
 
     Xl9555->begin();
 
-    Xl9555->pin_mode(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
     Aw86224_Iic_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
 

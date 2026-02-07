@@ -379,13 +379,13 @@ extern "C" void app_main(void)
 
     Xl9555->begin();
 
-    Xl9555->pin_mode(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(1000));
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     vTaskDelay(pdMS_TO_TICKS(1000));
-    Xl9555->pin_write(XL9555_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     Lilygo_Device_Driver::Init_Ldo_Channel_Power(3, 2500);

@@ -20,6 +20,8 @@ menu "Example Configuration"
                 bool "axp517"
             config EXAMPLE_BUILD_AW86224
                 bool "aw86224"
+            config EXAMPLE_BUILD_ES8388
+                bool "es8388"
     endchoice
 
     config ENABLE_USB_DISPLAY

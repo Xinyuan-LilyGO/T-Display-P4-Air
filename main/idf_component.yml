@@ -3,3 +3,8 @@ dependencies:
     version: "9.4.0"
     matches:
     - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL} == True"
+
+  espressif/esp_codec_dev:
+    version: "^1.5.4"
+    matches:
+    - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
