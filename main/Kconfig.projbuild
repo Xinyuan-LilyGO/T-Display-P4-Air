@@ -22,6 +22,8 @@ menu "Example Configuration"
                 bool "aw86224"
             config EXAMPLE_BUILD_ES8388
                 bool "es8388"
+            config EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW
+                bool "screen_lvgl_touch_draw"
     endchoice
 
     config ENABLE_USB_DISPLAY
@@ -65,6 +67,6 @@ menu "Example Configuration"
     # 外部解码图片缓冲空间设置大小为：宽度 × 高度 × 4
     config LV_CACHE_DEF_SIZE
         string "Default image cache size. 0 to disable caching"
-        default "3686400"
+        default "2522880"
 
 endmenu

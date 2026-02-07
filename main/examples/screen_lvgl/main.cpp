@@ -2,14 +2,13 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:36:09
- * @LastEditTime: 2026-02-05 13:42:02
+ * @LastEditTime: 2026-02-07 11:51:43
  * @License: GPL 3.0
  */
-
-#include "lvgl.h"
 #include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
+#include "lvgl.h"
 #include <cmath>
 
 #define LVGL_TICK_PERIOD_MS 1
