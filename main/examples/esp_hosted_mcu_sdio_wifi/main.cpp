@@ -2,7 +2,7 @@
  * @Description: esp_hosted_mcu_sdio_wifi
  * @Author: LILYGO_L
  * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-02-09 14:26:31
+ * @LastEditTime: 2026-02-09 14:39:46
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -47,8 +47,6 @@ auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SD
 
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
 auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
-
-auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
 
 esp_err_t validate_transport_configuration(void)
 {
