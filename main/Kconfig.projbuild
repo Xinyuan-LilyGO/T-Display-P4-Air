@@ -26,6 +26,8 @@ menu "Example Configuration"
                 bool "screen_lvgl_touch_draw"
             config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI
                 bool "esp_hosted_mcu_sdio_wifi"
+            config EXAMPLE_BUILD_IPERF
+                bool "iperf"
     endchoice
 
     config ENABLE_USB_DISPLAY

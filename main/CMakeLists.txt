@@ -15,6 +15,8 @@ elseif(CONFIG_EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW)
     set(project_path "examples/screen_lvgl_touch_draw/")
 elseif(CONFIG_EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI)
     set(project_path "examples/esp_hosted_mcu_sdio_wifi/")
+elseif(CONFIG_EXAMPLE_BUILD_IPERF)
+    set(project_path "examples/iperf/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 

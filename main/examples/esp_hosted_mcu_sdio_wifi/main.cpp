@@ -2,7 +2,7 @@
  * @Description: esp_hosted_mcu_sdio_wifi
  * @Author: LILYGO_L
  * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-02-09 14:39:46
+ * @LastEditTime: 2026-02-09 15:19:08
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -315,6 +315,11 @@ extern "C" void app_main(void)
     Xl9555->pin_mode(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     // Xl9555->pin_mode(XL9555_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 

@@ -1,46 +1,44 @@
 /*
- * @Description: esp_hosted_mcu_sdio_wifi
+ * @Description: None
  * @Author: LILYGO_L
- * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-02-09 14:26:31
+ * @Date: 2026-02-09 14:35:28
+ * @LastEditTime: 2026-02-09 15:19:48
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
-#include "esp_hosted.h"
-#include "esp_wifi_remote.h"
-#include <unordered_set>
 
-extern "C"
-{
-#include "esp_hosted_transport_config.h"
-}
+#include <errno.h>
+#include <string.h>
+#include "esp_wifi.h"
+#include "esp_log.h"
+#include "esp_err.h"
+#include "nvs_flash.h"
+#include "esp_console.h"
+#include "cmd_system.h"
 
-#define WIFI_SSID "xinyuandianzi"
-#define WIFI_PASSWORD "AA15994823428"
+/* component manager */
+#include "iperf.h"
+#include "wifi_cmd.h"
+#include "iperf_cmd.h"
+#include "ping_cmd.h"
 
-typedef enum
-{
-    TRANSPORT_CONFIG_STATUS_UNINITIALIZED = 0,
-    TRANSPORT_CONFIG_STATUS_CONFIGURED,
-    TRANSPORT_CONFIG_STATUS_ACTIVE,
-    TRANSPORT_CONFIG_STATUS_ERROR
-} transport_config_status_t;
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS || CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS
+#include "esp_wifi_he.h"
+#endif
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS
+extern int wifi_cmd_get_tx_statistics(int argc, char **argv);
+extern int wifi_cmd_clr_tx_statistics(int argc, char **argv);
+#endif
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS
+extern int wifi_cmd_get_rx_statistics(int argc, char **argv);
+extern int wifi_cmd_clr_rx_statistics(int argc, char **argv);
+#endif
 
-typedef struct
-{
-    transport_config_status_t status;
-    esp_hosted_transport_err_t last_error;
-} transport_config_context_t;
-
-transport_config_context_t g_transport_context =
-    {
-        .status = TRANSPORT_CONFIG_STATUS_UNINITIALIZED,
-        .last_error = ESP_TRANSPORT_OK,
-};
-
-bool wifi_scan_success_flag = false;
+#if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
+#include "esp_extconn.h"
+#endif
 
 auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
 auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
@@ -48,258 +46,39 @@ auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SD
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
 auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
 
-auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
-
-esp_err_t validate_transport_configuration(void)
+void iperf_hook_show_wifi_stats(iperf_traffic_type_t type, iperf_status_t status)
 {
-    printf("validating transport configuration...\n");
-
-    struct esp_hosted_transport_config *config;
-    esp_hosted_transport_err_t result = esp_hosted_transport_get_config(&config);
-
-    if (result != ESP_TRANSPORT_OK || !config)
+    if (status == IPERF_STARTED)
     {
-        printf("configuration validation failed: cannot retrieve config\n");
-        return ESP_FAIL;
-    }
-
-    // Basic validation checks
-    if (config->transport_in_use < 1 || config->transport_in_use > 4)
-    {
-        printf("invalid transport type: %d\n", config->transport_in_use);
-        return ESP_FAIL;
-    }
-
-    printf("transport configuration validation passed\n");
-    return ESP_OK;
-}
-
-void display_transport_configuration(void)
-{
-    printf("retrieving current transport configuration...\n");
-
-    struct esp_hosted_transport_config *config;
-    esp_hosted_transport_err_t result = esp_hosted_transport_get_config(&config);
-
-    if (result != ESP_TRANSPORT_OK || !config)
-    {
-        printf("failed to retrieve transport configuration: error %d\n", result);
-        return;
-    }
-
-    printf("current transport configuration:\n");
-    printf("  transport type: %d\n", config->transport_in_use);
-
-    switch (config->transport_in_use)
-    {
-    case 1: // sdio
-        printf("  sdio configuration:\n");
-        printf("    clock frequency: %lu khz\n", config->u.sdio.clock_freq_khz);
-        printf("    bus width: %d bits\n", config->u.sdio.bus_width);
-        printf("    queue sizes - tx: %d, rx: %d\n",
-               config->u.sdio.tx_queue_size, config->u.sdio.rx_queue_size);
-        break;
-
-    case 2: // spi half-duplex
-        printf("  spi half-duplex configuration:\n");
-        printf("    clock frequency: %lu mhz\n", config->u.spi_hd.clk_mhz);
-        printf("    data lines: %d\n", config->u.spi_hd.num_data_lines);
-        printf("    checksum: %s\n",
-               config->u.spi_hd.checksum_enable ? "enabled" : "disabled");
-        break;
-
-    case 3: // spi full-duplex
-        printf("  spi full-duplex configuration:\n");
-        printf("    clock frequency: %lu mhz\n", config->u.spi.clk_mhz);
-        printf("    spi mode: %d\n", config->u.spi.mode);
-        printf("    queue sizes - tx: %d, rx: %d\n",
-               config->u.spi.tx_queue_size, config->u.spi.rx_queue_size);
-        break;
-
-    case 4: // uart
-        printf("  uart configuration:\n");
-        printf("    baud rate: %lu bps\n", config->u.uart.baud_rate);
-        printf("    uart port: %d\n", config->u.uart.port);
-        printf("    checksum: %s\n",
-               config->u.uart.checksum_enable ? "enabled" : "disabled");
-        break;
-
-    default:
-        printf("  unknown transport type: %d\n", config->transport_in_use);
-        break;
-    }
-}
-
-esp_err_t initialize_esp_hosted_simple(void)
-{
-    printf("initializing esp-hosted...\n");
-
-    esp_err_t result = esp_hosted_init();
-    if (result == ESP_OK)
-    {
-        printf("esp-hosted initialized successfully\n");
-        g_transport_context.status = TRANSPORT_CONFIG_STATUS_ACTIVE;
-    }
-    else
-    {
-        printf("esp-hosted initialization failed: %s\n", esp_err_to_name(result));
-        g_transport_context.status = TRANSPORT_CONFIG_STATUS_ERROR;
-        printf("check transport configuration and slave device connection\n");
-    }
-
-    return result;
-}
-
-void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
-    {
-        printf("wifi sta start\n");
-        // esp_wifi_connect();
-    }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
-    {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        printf("got ip: " IPSTR "\n", IP2STR(&event->ip_info.ip));
-
-        printf("wifi connect success\n");
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
-    {
-        printf("wifi connect fail\n");
-        // printf("wifi disconnected, trying to reconnect...\n");
-        // esp_wifi_connect();
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_SCAN_DONE)
-    {
-        printf("wifi scan finish\n");
-        uint16_t ap_count = 0;
-        std::vector<wifi_ap_record_t> ap_info;
-
-        // get scan result count
-        if (esp_wifi_scan_get_ap_num(&ap_count) != ESP_OK)
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS
+        if (type != IPERF_UDP_SERVER)
         {
-            printf("failed to get ap count\n");
-            return;
+            wifi_cmd_clr_tx_statistics(0, NULL);
         }
-
-        // limit maximum count to avoid memory issues
-        if (ap_count > 64)
+#endif
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS
+        if (type != IPERF_UDP_CLIENT)
         {
-            ap_count = 64;
+            wifi_cmd_clr_rx_statistics(0, NULL);
         }
-        ap_info.resize(ap_count);
-
-        // get wifi hotspot info
-        if (esp_wifi_scan_get_ap_records(&ap_count, ap_info.data()) != ESP_OK)
-        {
-            printf("failed to get ap records\n");
-            return;
-        }
-
-        // clear cache
-        ESP_ERROR_CHECK(esp_wifi_clear_ap_list());
-
-        printf("scan %d wifi:\n", ap_count);
-
-        // **sort by rssi signal strength in descending order**
-        std::sort(ap_info.begin(), ap_info.end(),
-                  [](const wifi_ap_record_t &a, const wifi_ap_record_t &b)
-                  {
-                      return a.rssi > b.rssi; // higher rssi means stronger signal
-                  });
-
-        // **remove duplicate ssid**
-        std::unordered_set<std::string> seen_ssids;
-        std::vector<wifi_ap_record_t> unique_ap_info;
-
-        for (const auto &info : ap_info)
-        {
-            std::string ssid_str(reinterpret_cast<const char *>(info.ssid)); // convert to std::string
-            if (!ssid_str.empty() && seen_ssids.find(ssid_str) == seen_ssids.end())
-            {
-                seen_ssids.emplace(ssid_str);
-                unique_ap_info.emplace_back(info);
-            }
-        }
-
-        // **iterate and print wifi hotspot info**
-
-        printf("-------------------------------------------------------------\n");
-        printf("| %-32s | %4s | %7s | %17s |\n", "ssid", "rssi", "channel", "mac address");
-        printf("-------------------------------------------------------------\n");
-
-        for (const auto &info : unique_ap_info)
-        {
-            const char *band = (info.primary <= 14) ? "2.4ghz" : "5ghz";
-            printf("| %-32s | %4d dbm | %3d (%s) | %02x:%02x:%02x:%02x:%02x:%02x |\n", info.ssid,
-                   info.rssi, info.primary, band, info.bssid[0], info.bssid[1], info.bssid[2], info.bssid[3],
-                   info.bssid[4], info.bssid[5]);
-        }
-
-        printf("-------------------------------------------------------------\n");
-
-        wifi_scan_success_flag = true;
+#endif
     }
-    else
+
+    if (status == IPERF_STOPPED)
     {
-        printf("event %s %ld\n", event_base, event_id);
-    }
-}
-
-void wifi_init_sta()
-{
-    // // initialize nvs
-    // esp_err_t err = nvs_flash_init();
-    // if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    // {
-    //     // nvs partition was truncated and needs to be erased
-    //     // retry nvs_flash_init
-    //     ESP_ERROR_CHECK(nvs_flash_erase());
-    //     err = nvs_flash_init();
-    // }
-    // ESP_ERROR_CHECK(err);
-
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_start());
-
-    while (1)
-    {
-        esp_wifi_scan_start(NULL, true);
-        vTaskDelay(pdMS_TO_TICKS(1500));
-
-        if (wifi_scan_success_flag == true)
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS
+        if (type != IPERF_UDP_SERVER)
         {
-            wifi_scan_success_flag = false;
-            printf("wifi scan success\n");
-            break;
+            wifi_cmd_get_tx_statistics(0, NULL);
         }
-    }
-
-    wifi_config_t wifi_config =
+#endif
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS
+        if (type != IPERF_UDP_CLIENT)
         {
-            .sta =
-                {
-                    .ssid = WIFI_SSID,
-                    .password = WIFI_PASSWORD,
-                },
-        };
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-
-    esp_wifi_connect();
+            wifi_cmd_get_rx_statistics(0, NULL);
+        }
+#endif
+    }
 }
 
 extern "C" void app_main(void)
@@ -317,47 +96,91 @@ extern "C" void app_main(void)
     Xl9555->pin_mode(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     // Xl9555->pin_mode(XL9555_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     // Xl9555->pin_write(XL9555_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
-    printf("esp-hosted transport configuration example\n");
-    printf("========================================\n");
+#if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
+    esp_extconn_config_t ext_config = ESP_EXTCONN_CONFIG_DEFAULT();
+    esp_extconn_init(&ext_config);
+#endif
 
-    // validate configuration
-    if (validate_transport_configuration() != ESP_OK)
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
-        printf("transport configuration validation failed\n");
-        return;
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
     }
+    ESP_ERROR_CHECK(ret);
 
-    // display current configuration
-    display_transport_configuration();
+    /*
+    NOTE(#15855): wifi_cmd_initialize_wifi is a basic function to start wifi, set handlers and set wifi-cmd status.
+    For advanced usage, please refer to wifi_cmd.h or the document of wifi-cmd component: https://components.espressif.com/components/esp-qa/wifi-cmd
 
-    printf("========================================\n");
+    example:
+        wifi_cmd_wifi_init();
+        my_function();  // <---- more configs before wifi start
+        wifi_cmd_wifi_start();
 
-    // initialize esp-hosted with configured transport
-    if (initialize_esp_hosted_simple() == ESP_OK)
-    {
-        printf("wifi and bluetooth functionality is now available\n");
+    Please note that some wifi commands such as "wifi start/restart" may not work as expected if "wifi_cmd_initialize_wifi" was not used.
+    */
+    /* initialise wifi and set wifi-cmd status */
+    wifi_cmd_initialize_wifi(NULL);
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 
-        // display final configuration
-        display_transport_configuration();
-        printf("========================================\n");
-    }
-    else
-    {
-        printf("esp-hosted initialization failed\n");
-    }
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_RX_STATS
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_RX_MU_STATS
+    esp_wifi_enable_rx_statistics(true, true);
+#else
+    esp_wifi_enable_rx_statistics(true, false);
+#endif
+#endif
+#if CONFIG_ESP_WIFI_ENABLE_WIFI_TX_STATS
+    esp_wifi_enable_tx_statistics(ESP_WIFI_ACI_BE, true);
+#endif
 
-    printf("application running - transport status: %s\n",
-           g_transport_context.status == TRANSPORT_CONFIG_STATUS_ACTIVE ? "active" : "error");
+    esp_console_repl_t *repl = NULL;
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+    repl_config.prompt = "iperf>";
 
-    wifi_init_sta();
+    // init console REPL environment
+#if CONFIG_ESP_CONSOLE_UART
+    esp_console_dev_uart_config_t uart_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
+#elif CONFIG_ESP_CONSOLE_USB_CDC
+    esp_console_dev_usb_cdc_config_t cdc_config = ESP_CONSOLE_DEV_CDC_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_usb_cdc(&cdc_config, &repl_config, &repl));
+#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+    esp_console_dev_usb_serial_jtag_config_t usbjtag_config = ESP_CONSOLE_DEV_USB_SERIAL_JTAG_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_usb_serial_jtag(&usbjtag_config, &repl_config, &repl));
+#endif
 
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
+    /* Register commands */
+    register_system();
+    /* From wifi-cmd */
+    wifi_cmd_register_all();
+    /* From iperf-cmd */
+    app_register_iperf_commands();
+    app_register_iperf_hook_func(iperf_hook_show_wifi_stats);
+    /* From ping-cmd */
+    ping_cmd_register_ping();
+
+    printf("\n ==================================================\n");
+    printf(" |       Steps to test WiFi throughput            |\n");
+    printf(" |                                                |\n");
+    printf(" |  1. Print 'help' to gain overview of commands  |\n");
+    printf(" |  2. Configure device to station or soft-AP     |\n");
+    printf(" |  3. Setup WiFi connection                      |\n");
+    printf(" |  4. Run iperf to test UDP/TCP RX/TX throughput |\n");
+    printf(" |                                                |\n");
+    printf(" =================================================\n\n");
+
+    // start console REPL
+    ESP_ERROR_CHECK(esp_console_start_repl(repl));
 }
