@@ -24,6 +24,8 @@ menu "Example Configuration"
                 bool "es8388"
             config EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW
                 bool "screen_lvgl_touch_draw"
+            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI
+                bool "esp_hosted_mcu_sdio_wifi"
     endchoice
 
     config ENABLE_USB_DISPLAY

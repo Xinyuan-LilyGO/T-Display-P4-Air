@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:40:30
- * @LastEditTime: 2026-02-03 09:31:16
+ * @LastEditTime: 2026-02-09 14:01:44
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -21,6 +21,14 @@ extern "C" void app_main(void)
     Xl9555->pin_mode(Cpp_Bus_Driver::Xl95x5::Pin::IO6, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_mode(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_mode(Cpp_Bus_Driver::Xl95x5::Pin::IO7, Cpp_Bus_Driver::Xl95x5::Mode::INPUT);
+
+    Xl9555->pin_mode(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+
+    Xl9555->pin_mode(XL9555_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+
+    Xl9555->pin_write(XL9555_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
     while (1)
     {
