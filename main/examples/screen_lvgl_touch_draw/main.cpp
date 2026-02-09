@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:36:09
- * @LastEditTime: 2026-02-07 15:10:22
+ * @LastEditTime: 2026-02-09 14:38:19
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -286,8 +286,6 @@ extern "C" void app_main(void)
     printf("Ciallo\n");
 
     Axp517->begin();
-
-    Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
 
     Xl9555->begin();
 

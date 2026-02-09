@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-04 17:12:29
- * @LastEditTime: 2026-02-05 13:41:42
+ * @LastEditTime: 2026-02-09 14:37:32
  * @License: GPL 3.0
  */
 
@@ -23,8 +23,6 @@ extern "C" void app_main(void)
     printf("Ciallo\n");
 
     Axp517->begin();
-    
-    Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
 
     Xl9555->begin();
 

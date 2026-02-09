@@ -30,8 +30,6 @@ extern "C" void app_main(void)
 
     Axp517->begin();
 
-    Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
-
     Xl9555->begin();
 
     Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
