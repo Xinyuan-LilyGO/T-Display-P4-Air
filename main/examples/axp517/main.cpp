@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-02-04 16:56:20
+ * @LastEditTime: 2026-02-09 10:46:40
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -141,6 +141,7 @@ extern "C" void app_main(void)
     // Axp517->gpio_write(Cpp_Bus_Driver::Axp517::Gpio_Status::HIGH);
 
     // Axp517->set_boost_enable(true);
+    // Axp517->set_force_rbfet_enable(true);
 
     // vTaskDelay(pdMS_TO_TICKS(5000));
     // Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
