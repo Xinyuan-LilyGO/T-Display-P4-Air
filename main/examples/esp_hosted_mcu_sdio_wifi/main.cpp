@@ -2,7 +2,7 @@
  * @Description: esp_hosted_mcu_sdio_wifi
  * @Author: LILYGO_L
  * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-02-09 15:19:08
+ * @LastEditTime: 2026-02-09 16:56:20
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -17,7 +17,7 @@ extern "C"
 #include "esp_hosted_transport_config.h"
 }
 
-#define WIFI_SSID "xinyuandianzi"
+#define WIFI_SSID "xinyuandianzi_AX_Wi-Fi5"
 #define WIFI_PASSWORD "AA15994823428"
 
 typedef enum

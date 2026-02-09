@@ -17,6 +17,8 @@ elseif(CONFIG_EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI)
     set(project_path "examples/esp_hosted_mcu_sdio_wifi/")
 elseif(CONFIG_EXAMPLE_BUILD_IPERF)
     set(project_path "examples/iperf/")
+elseif(CONFIG_EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE)
+    set(project_path "examples/esp_hosted_mcu_sdio_wifi_http_download_file/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
