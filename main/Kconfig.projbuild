@@ -30,6 +30,8 @@ menu "Example Configuration"
                 bool "iperf"
             config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE
                 bool "esp_hosted_mcu_sdio_wifi_http_download_file"
+            config EXAMPLE_BUILD_SPIFFS
+                bool "spiffs"
     endchoice
 
     config ENABLE_USB_DISPLAY
