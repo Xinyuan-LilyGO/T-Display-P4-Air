@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:40:30
- * @LastEditTime: 2026-02-24 16:34:09
+ * @LastEditTime: 2026-02-24 17:58:54
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"

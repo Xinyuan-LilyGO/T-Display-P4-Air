@@ -26,6 +26,11 @@ endif()
 idf_component_register(SRC_DIRS ${project_path} 
                         INCLUDE_DIRS ${project_path})
 
+if(CONFIG_EXAMPLE_BUILD_SPIFFS)
+    # 配置 SPIFFS 自动烧录
+    spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
+endif()
+
 # target_compile_options(
 #     ${COMPONENT_LIB}
 #     PRIVATE -Wno-error=unused-const-variable -Wno-error=delete-non-virtual-dtor
