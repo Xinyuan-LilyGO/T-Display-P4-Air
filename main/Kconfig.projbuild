@@ -32,6 +32,8 @@ menu "Example Configuration"
                 bool "esp_hosted_mcu_sdio_wifi_http_download_file"
             config EXAMPLE_BUILD_SPIFFS
                 bool "spiffs"
+            config EXAMPLE_BUILD_ES8388_SPIFFS_MP3
+                bool "es8388_spiffs_mp3"
     endchoice
 
     config ENABLE_USB_DISPLAY

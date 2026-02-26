@@ -16,7 +16,9 @@ auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SD
 auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
 auto Es8388_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(ES8388_SDA, ES8388_SCL, I2C_NUM_1);
 
-auto Es8388_Iis_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iis>(ES8388_ADC_DATA, ES8388_DAC_DATA, ES8388_WS_LRCK, ES8388_BCLK, ES8388_MCLK);
+auto Es8388_Iis_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iis>(ES8388_ADC_DATA, ES8388_DAC_DATA, ES8388_WS_LRCK, ES8388_BCLK, ES8388_MCLK,
+                                                                     i2s_port_t::I2S_NUM_0, Cpp_Bus_Driver::Hardware_Iis::Data_Mode::INPUT_OUTPUT, Cpp_Bus_Driver::Hardware_Iis::Iis_Mode::STD,
+                                                                     i2s_clock_src_t::I2S_CLK_SRC_APLL);
 
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
 auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
@@ -130,7 +132,7 @@ extern "C" void app_main(void)
             .port = Es8388_Iis_Bus->_port,
             .rx_handle = Es8388_Iis_Bus->_chan_rx_handle,
             .tx_handle = Es8388_Iis_Bus->_chan_tx_handle,
-            .clk_src = i2s_clock_src_t::I2S_CLK_SRC_DEFAULT,
+            .clk_src = i2s_clock_src_t::I2S_CLK_SRC_APLL,
         };
     const audio_codec_data_if_t *data_if = audio_codec_new_i2s_data(&i2s_cfg);
 
@@ -145,7 +147,7 @@ extern "C" void app_main(void)
             .pa_pin = -1,         // 功放使能引脚
             .pa_reverted = false, // 高电平使能功放
             .hw_gain = {
-                .pa_voltage = 5.0,        // 功放电压
+                .pa_voltage = 3.3,        // 功放电压
                 .codec_dac_voltage = 3.3, // dac电压
                 .pa_gain = 0.0},
         };
@@ -202,8 +204,6 @@ extern "C" void app_main(void)
     //     printf("es8388 register[%d]: %#X\n", i, buffer);
     // }
 
-    auto buffer = std::make_unique<int16_t[]>(1024);
-
     while (1)
     {
         if (Esp32p4->pin_read(ESP32P4_BOOT) == 0)
@@ -213,6 +213,8 @@ extern "C" void app_main(void)
             printf("play_audio start\n");
 
             esp_codec_dev_write(codec_dev, (uint8_t *)c2_b16_s44100, sizeof(c2_b16_s44100));
+
+            vTaskDelay(pdMS_TO_TICKS(100));
 
             printf("play_audio finish\n");
         }
@@ -232,8 +234,9 @@ extern "C" void app_main(void)
         //     Cycle_Time = Esp32p4->get_system_time_ms() + 100;
         // }
 
-        esp_codec_dev_read(codec_dev, buffer.get(), 1024 * sizeof(uint16_t));
-        esp_codec_dev_write(codec_dev, buffer.get(), 1024 * sizeof(uint16_t));
+        auto buffer = std::make_unique<int16_t[]>(1024);
+        esp_codec_dev_read(codec_dev, buffer.get(), 1024 * sizeof(int16_t));
+        esp_codec_dev_write(codec_dev, buffer.get(), 1024 * sizeof(int16_t));
 
         vTaskDelay(pdMS_TO_TICKS(10));
     }

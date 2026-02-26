@@ -9,6 +9,7 @@ dependencies:
     version: "^1.5.4"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
 
   espressif/esp_hosted:
     version: "2.11.5"
@@ -38,3 +39,8 @@ dependencies:
     version: "^1.0.0"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
+
+  espressif/esp_audio_codec:
+    version: "^2.4.1"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"

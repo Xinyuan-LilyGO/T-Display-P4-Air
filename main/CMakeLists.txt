@@ -21,6 +21,8 @@ elseif(CONFIG_EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE)
     set(project_path "examples/esp_hosted_mcu_sdio_wifi_http_download_file/")
 elseif(CONFIG_EXAMPLE_BUILD_SPIFFS)
     set(project_path "examples/spiffs/")
+elseif(CONFIG_EXAMPLE_BUILD_ES8388_SPIFFS_MP3)
+    set(project_path "examples/es8388_spiffs_mp3/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
@@ -28,6 +30,8 @@ idf_component_register(SRC_DIRS ${project_path}
 
 if(CONFIG_EXAMPLE_BUILD_SPIFFS)
     # 配置 SPIFFS 自动烧录
+    spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
+elseif(CONFIG_EXAMPLE_BUILD_ES8388_SPIFFS_MP3)
     spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
 endif()
 
