@@ -25,6 +25,8 @@ elseif(CONFIG_EXAMPLE_BUILD_ES8388_SPIFFS_MP3)
     set(project_path "examples/es8388_spiffs_mp3/")
 elseif(CONFIG_EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3)
     set(project_path "examples/esp_hosted_mcu_sdio_wifi_es8388_mp3/")
+elseif(CONFIG_EXAMPLE_BUILD_BHI260AP)
+    set(project_path "examples/bhi260ap/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 

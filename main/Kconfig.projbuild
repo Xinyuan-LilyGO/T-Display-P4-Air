@@ -36,6 +36,8 @@ menu "Example Configuration"
                 bool "es8388_spiffs_mp3"
             config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3
                 bool "esp_hosted_mcu_sdio_wifi_es8388_mp3"
+            config EXAMPLE_BUILD_BHI260AP
+                bool "bhi260ap"
     endchoice
 
     config ENABLE_USB_DISPLAY
