@@ -38,6 +38,8 @@ menu "Example Configuration"
                 bool "esp_hosted_mcu_sdio_wifi_es8388_mp3"
             config EXAMPLE_BUILD_BHI260AP
                 bool "bhi260ap"
+            config EXAMPLE_BUILD_QMC6310N
+                bool "qmc6310n"
     endchoice
 
     config ENABLE_USB_DISPLAY
