@@ -29,6 +29,8 @@ elseif(CONFIG_EXAMPLE_BUILD_BHI260AP)
     set(project_path "examples/bhi260ap/")
 elseif(CONFIG_EXAMPLE_BUILD_QMC6310N)
     set(project_path "examples/qmc6310n/")
+elseif(CONFIG_EXAMPLE_BUILD_BHI260AP_QMC6310N)
+    set(project_path "examples/bhi260ap_qmc6310n/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
