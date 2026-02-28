@@ -42,6 +42,8 @@ menu "Example Configuration"
                 bool "qmc6310n"
             config EXAMPLE_BUILD_BHI260AP_QMC6310N
                 bool "bhi260ap_qmc6310n"
+            config EXAMPLE_BUILD_SGM38121
+                bool "sgm38121"
     endchoice
 
     config ENABLE_USB_DISPLAY
