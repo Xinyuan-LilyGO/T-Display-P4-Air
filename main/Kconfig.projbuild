@@ -44,6 +44,19 @@ menu "Example Configuration"
                 bool "bhi260ap_qmc6310n"
             config EXAMPLE_BUILD_SGM38121
                 bool "sgm38121"
+            config EXAMPLE_BUILD_SCREEN_CAMERA
+                bool "screen_camera"
+    endchoice
+
+    choice
+        prompt "Select the camera type"
+        default CAMERA_TYPE_OV2710
+            config CAMERA_TYPE_SC2336
+                bool "SC2336"
+            config CAMERA_TYPE_OV2710
+                bool "OV2710"
+            config CAMERA_TYPE_OV5645
+                bool "OV5645"
     endchoice
 
     config ENABLE_USB_DISPLAY

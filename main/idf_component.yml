@@ -43,8 +43,18 @@ dependencies:
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
+  cmd_system:
+    override_path: "../components/cmd_system"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
+
   espressif/esp_audio_codec:
     version: "^2.4.1"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+
+  esp_video_app_video:
+    override_path: "../components/esp_video_app_video"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"

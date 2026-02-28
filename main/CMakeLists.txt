@@ -33,6 +33,8 @@ elseif(CONFIG_EXAMPLE_BUILD_BHI260AP_QMC6310N)
     set(project_path "examples/bhi260ap_qmc6310n/")
 elseif(CONFIG_EXAMPLE_BUILD_SGM38121)
     set(project_path "examples/sgm38121/")
+elseif(CONFIG_EXAMPLE_BUILD_SCREEN_CAMERA)
+    set(project_path "examples/screen_camera/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
