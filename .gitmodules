@@ -10,3 +10,6 @@
 [submodule "components/arduino_cpp_bus_driver"]
 	path = components/arduino_cpp_bus_driver
 	url = https://github.com/Llgok/arduino_cpp_bus_driver.git
+[submodule "components/RadioLib"]
+	path = components/RadioLib
+	url = https://github.com/jgromes/RadioLib.git

@@ -5,6 +5,7 @@ idf_component_register(
         INCLUDE_DIRS 
         ${src_dirs}
         REQUIRES
+        "cpp_bus_driver" "RadioLib"
     )
 
 # target_compile_options(

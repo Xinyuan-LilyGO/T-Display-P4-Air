@@ -35,6 +35,8 @@ elseif(CONFIG_EXAMPLE_BUILD_SGM38121)
     set(project_path "examples/sgm38121/")
 elseif(CONFIG_EXAMPLE_BUILD_SCREEN_CAMERA)
     set(project_path "examples/screen_camera/")
+elseif(CONFIG_EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE)
+    set(project_path "examples/radiolib_lr1121_send_receive/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
