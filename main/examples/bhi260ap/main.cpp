@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-27 09:07:56
- * @LastEditTime: 2026-02-27 09:32:17
+ * @LastEditTime: 2026-03-03 16:19:13
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -130,10 +130,16 @@ extern "C" void app_main(void)
     Axp517->begin();
 
     Xl9555->begin();
-
     Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-
     Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+
+    Xl9555->pin_mode(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     Wire1._bus->set_bus_handle(Axp517_Iic_Bus->get_bus_handle());
     Bhi260ap_Init();

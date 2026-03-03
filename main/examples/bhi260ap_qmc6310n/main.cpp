@@ -160,10 +160,18 @@ extern "C" void app_main(void)
     printf("Ciallo\n");
 
     Axp517->begin();
+    
     Xl9555->begin();
-
     Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+
+    Xl9555->pin_mode(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_BHI260AP_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     Wire1._bus->set_bus_handle(Axp517_Iic_Bus->get_bus_handle());
     Bhi260ap_Init();
