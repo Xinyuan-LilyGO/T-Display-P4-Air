@@ -39,6 +39,8 @@ elseif(CONFIG_EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE)
     set(project_path "examples/radiolib_lr1121_send_receive/")
 elseif(CONFIG_EXAMPLE_BUILD_ST25R3916)
     set(project_path "examples/st25r3916/")
+elseif(CONFIG_EXAMPLE_BUILD_IR_NEC_TRANSCEIVER)
+    set(project_path "examples/ir_nec_transceiver/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
