@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-28 16:21:31
- * @LastEditTime: 2026-03-02 13:46:56
+ * @LastEditTime: 2026-03-03 16:26:05
  * @License: GPL 3.0
  */
 
@@ -36,9 +36,16 @@ extern "C" void app_main(void)
     Axp517->begin();
 
     Xl9555->begin();
-
     Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+
+    Xl9555->pin_mode(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     ESP32P4->pin_mode(ESP32P4_BOOT, Cpp_Bus_Driver::Tool::Pin_Mode::INPUT);
 
