@@ -48,6 +48,8 @@ menu "Example Configuration"
                 bool "screen_camera"
             config EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE
                 bool "radiolib_lr1121_send_receive"
+            config EXAMPLE_BUILD_ST25R3916
+                bool "st25r3916"
     endchoice
 
     choice

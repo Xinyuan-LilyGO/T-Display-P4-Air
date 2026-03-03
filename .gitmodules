@@ -13,3 +13,9 @@
 [submodule "components/RadioLib"]
 	path = components/RadioLib
 	url = https://github.com/jgromes/RadioLib.git
+[submodule "components/ST25R3916"]
+	path = components/ST25R3916
+	url = https://github.com/Llgok/ST25R3916.git
+[submodule "components/NFC-RFAL"]
+	path = components/NFC-RFAL
+	url = https://github.com/Llgok/NFC-RFAL.git
