@@ -1,21 +1,21 @@
-[submodule "components/lilygo_device_driver"]
-	path = components/lilygo_device_driver
+[submodule "libraries/lilygo_device_driver"]
+	path = libraries/lilygo_device_driver
 	url = https://github.com/Xinyuan-LilyGO/lilygo_device_driver.git
-[submodule "components/cpp_bus_driver"]
-	path = components/cpp_bus_driver
+[submodule "libraries/cpp_bus_driver"]
+	path = libraries/cpp_bus_driver
 	url = https://github.com/Llgok/cpp_bus_driver.git
-[submodule "components/SensorLib"]
-	path = components/SensorLib
+[submodule "libraries/SensorLib"]
+	path = libraries/SensorLib
 	url = https://github.com/Llgok/SensorLib.git
-[submodule "components/arduino_cpp_bus_driver"]
-	path = components/arduino_cpp_bus_driver
+[submodule "libraries/arduino_cpp_bus_driver"]
+	path = libraries/arduino_cpp_bus_driver
 	url = https://github.com/Llgok/arduino_cpp_bus_driver.git
-[submodule "components/RadioLib"]
-	path = components/RadioLib
+[submodule "libraries/RadioLib"]
+	path = libraries/RadioLib
 	url = https://github.com/jgromes/RadioLib.git
-[submodule "components/ST25R3916"]
-	path = components/ST25R3916
+[submodule "libraries/ST25R3916"]
+	path = libraries/ST25R3916
 	url = https://github.com/Llgok/ST25R3916.git
-[submodule "components/NFC-RFAL"]
-	path = components/NFC-RFAL
+[submodule "libraries/NFC-RFAL"]
+	path = libraries/NFC-RFAL
 	url = https://github.com/Llgok/NFC-RFAL.git

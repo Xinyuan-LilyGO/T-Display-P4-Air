@@ -1,4 +1,57 @@
 dependencies:
+  cpp_bus_driver:
+    override_path: "../libraries/cpp_bus_driver"
+
+  lilygo_device_driver:
+    override_path: "../libraries/lilygo_device_driver"
+
+  private_library:
+    override_path: "../libraries/private_library"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
+
+  cmd_system:
+    override_path: "../libraries/cmd_system"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
+
+  esp_video_app_video:
+    override_path: "../libraries/esp_video_app_video"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"
+
+  RadioLib:
+    override_path: "../libraries/RadioLib"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
+
+  arduino_cpp_bus_driver:
+    override_path: "../libraries/arduino_cpp_bus_driver"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_QMC6310N} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP_QMC6310N} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
+
+  SensorLib:
+    override_path: "../libraries/SensorLib"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_QMC6310N} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP_QMC6310N} == True"
+
+  ST25R3916:
+    override_path: "../libraries/ST25R3916"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
+
+  NFC-RFAL:
+    override_path: "../libraries/NFC-RFAL"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
+
   lvgl/lvgl:
     version: "9.4.0"
     matches:
@@ -43,18 +96,8 @@ dependencies:
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
-  cmd_system:
-    override_path: "../components/cmd_system"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
-
   espressif/esp_audio_codec:
     version: "^2.4.1"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
-
-  esp_video_app_video:
-    override_path: "../components/esp_video_app_video"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"
