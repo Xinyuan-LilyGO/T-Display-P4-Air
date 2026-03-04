@@ -64,6 +64,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
 
   espressif/esp_hosted:
     version: "2.11.5"
@@ -101,3 +102,4 @@ dependencies:
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"

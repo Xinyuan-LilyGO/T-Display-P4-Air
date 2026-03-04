@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-25 09:09:45
- * @LastEditTime: 2026-02-26 16:50:50
+ * @LastEditTime: 2026-03-04 09:48:04
  * @License: GPL 3.0
  */
 #include "sdkconfig.h"
@@ -185,7 +185,7 @@ size_t parse_and_print_id3v2(FILE *f)
             }
             else if (encoding == 3)
             {
-                // UTF-8： 在大多数控制台中可以直接打印（假设printf/终端支持UTF-8）
+                // UTF-8： 在大多数控制台中可以直接打印
                 printf("%.*s\n", (int)actual_text_len, text_start);
             }
             else if (encoding == 1 || encoding == 2)

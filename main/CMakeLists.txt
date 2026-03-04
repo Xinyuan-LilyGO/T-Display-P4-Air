@@ -41,6 +41,8 @@ elseif(CONFIG_EXAMPLE_BUILD_ST25R3916)
     set(project_path "examples/st25r3916/")
 elseif(CONFIG_EXAMPLE_BUILD_IR_NEC_TRANSCEIVER)
     set(project_path "examples/ir_nec_transceiver/")
+elseif(CONFIG_EXAMPLE_BUILD_ES8388_SD_MP3)
+    set(project_path "examples/es8388_sd_mp3/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
