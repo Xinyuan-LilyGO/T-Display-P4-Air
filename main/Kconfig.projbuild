@@ -54,6 +54,8 @@ menu "Example Configuration"
                 bool "ir_nec_transceiver"
             config EXAMPLE_BUILD_ES8388_SD_MP3
                 bool "es8388_sd_mp3"
+            config EXAMPLE_BUILD_NRF9151_UART
+                bool "nrf9151_uart"
     endchoice
 
     choice
@@ -66,10 +68,6 @@ menu "Example Configuration"
             config CAMERA_TYPE_OV5645
                 bool "OV5645"
     endchoice
-
-    config ENABLE_USB_DISPLAY
-        bool "Enable USB Display"
-        default n
 
     choice
         prompt "Select the color format of the screen"

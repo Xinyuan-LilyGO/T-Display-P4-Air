@@ -43,6 +43,8 @@ elseif(CONFIG_EXAMPLE_BUILD_IR_NEC_TRANSCEIVER)
     set(project_path "examples/ir_nec_transceiver/")
 elseif(CONFIG_EXAMPLE_BUILD_ES8388_SD_MP3)
     set(project_path "examples/es8388_sd_mp3/")
+elseif(CONFIG_EXAMPLE_BUILD_NRF9151_UART)
+    set(project_path "examples/nrf9151_uart/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
@@ -54,8 +56,3 @@ if(CONFIG_EXAMPLE_BUILD_SPIFFS)
 elseif(CONFIG_EXAMPLE_BUILD_ES8388_SPIFFS_MP3)
     spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
 endif()
-
-# target_compile_options(
-#     ${COMPONENT_LIB}
-#     PRIVATE -Wno-error=unused-const-variable -Wno-error=delete-non-virtual-dtor
-#             -Wno-error=implicit-function-declaration -fpermissive)
