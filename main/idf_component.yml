@@ -10,7 +10,6 @@ dependencies:
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
 
   cmd_system:
     override_path: "../libraries/cmd_system"
@@ -21,11 +20,6 @@ dependencies:
     override_path: "../libraries/esp_video_app_video"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"
-
-  RadioLib:
-    override_path: "../libraries/RadioLib"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
 
   arduino_cpp_bus_driver:
     override_path: "../libraries/arduino_cpp_bus_driver"
@@ -103,3 +97,8 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
+
+  radiolib_bridge:
+    override_path: "../libraries/radiolib_bridge"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
