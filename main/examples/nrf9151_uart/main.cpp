@@ -2,10 +2,9 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-03-04 11:26:40
- * @LastEditTime: 2026-03-04 16:30:33
+ * @LastEditTime: 2026-03-12 17:13:53
  * @License: GPL 3.0
  */
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 
