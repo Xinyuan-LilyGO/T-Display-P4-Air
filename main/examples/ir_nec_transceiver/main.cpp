@@ -2,11 +2,9 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-03-03 10:33:23
- * @LastEditTime: 2026-03-03 16:09:52
+ * @LastEditTime: 2026-03-12 17:20:40
  * @License: GPL 3.0
  */
-
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 #include "driver/rmt_tx.h"

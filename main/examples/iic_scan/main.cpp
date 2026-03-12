@@ -2,10 +2,9 @@
  * @Description: iic_scan
  * @Author: LILYGO_L
  * @Date: 2025-06-13 12:06:14
- * @LastEditTime: 2026-03-09 10:24:40
+ * @LastEditTime: 2026-03-12 17:20:29
  * @License: GPL 3.0
  */
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 

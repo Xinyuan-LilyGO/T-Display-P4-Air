@@ -2,10 +2,9 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-27 09:07:56
- * @LastEditTime: 2026-03-03 16:19:13
+ * @LastEditTime: 2026-03-12 17:19:42
  * @License: GPL 3.0
  */
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 #include "SensorBHI260AP.hpp"

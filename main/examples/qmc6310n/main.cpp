@@ -2,10 +2,9 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-27 09:48:55
- * @LastEditTime: 2026-02-27 10:29:57
+ * @LastEditTime: 2026-03-12 17:20:48
  * @License: GPL 3.0
  */
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 #include "SensorQMC6310.hpp"

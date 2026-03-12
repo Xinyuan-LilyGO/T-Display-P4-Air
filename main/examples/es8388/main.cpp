@@ -1,4 +1,10 @@
-#include "sdkconfig.h"
+/*
+ * @Description: None
+ * @Author: LILYGO_L
+ * @Date: 2026-03-03 13:51:54
+ * @LastEditTime: 2026-03-12 17:19:56
+ * @License: GPL 3.0
+ */
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 #include "esp_codec_dev.h"

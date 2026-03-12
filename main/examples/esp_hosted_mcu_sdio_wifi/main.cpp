@@ -2,10 +2,9 @@
  * @Description: esp_hosted_mcu_sdio_wifi
  * @Author: LILYGO_L
  * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-02-09 16:56:20
+ * @LastEditTime: 2026-03-12 17:20:13
  * @License: GPL 3.0
  */
-#include "sdkconfig.h"
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
 #include "esp_hosted.h"
