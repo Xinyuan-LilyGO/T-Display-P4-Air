@@ -2,12 +2,11 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-28 16:21:31
- * @LastEditTime: 2026-03-12 17:20:54
+ * @LastEditTime: 2026-03-28 16:43:46
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
 #include "cpp_bus_driver_library.h"
-#include "RadioLib.h"
 #include "radiolib_bridge_driver.h"
 
 uint8_t Send_Package[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -17,12 +16,12 @@ bool Lr1121_Irq_flag = false;
 auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
 auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
 
-auto Spi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Spi>(LR1121_MOSI, LR1121_SCLK, LR1121_MISO, SPI2_HOST, 0);
+auto LR1121_Spi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Spi>(LR1121_MOSI, LR1121_SCLK, LR1121_MISO, SPI2_HOST, 0);
 
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
 auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
 
-RadioLibHal *Radiolib_Hal = new Radiolib_Cpp_Bus_Driver_Hal(Spi_Bus, 10000000, LR1121_CS);
+RadioLibHal *Radiolib_Hal = new Radiolib_Cpp_Bus_Driver_Hal(LR1121_Spi_Bus, 10000000, LR1121_CS);
 LR1121 Lr1121 = new Module(Radiolib_Hal, static_cast<uint32_t>(RADIOLIB_NC), LR1121_INT, LR1121_RST, LR1121_BUSY);
 
 auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
@@ -46,8 +45,6 @@ extern "C" void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(100));
 
     ESP32P4->pin_mode(ESP32P4_BOOT, Cpp_Bus_Driver::Tool::Pin_Mode::INPUT);
-
-    ESP32P4->pin_mode(LR1121_BUSY, Cpp_Bus_Driver::Tool::Pin_Mode::INPUT, Cpp_Bus_Driver::Tool::Pin_Status ::PULLDOWN);
 
     // int16_t status = Lr1121.begin(915.0, 125.0, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 22, 8);
     int16_t status = Lr1121.begin(2450.0, 406.25, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 13, 8);
