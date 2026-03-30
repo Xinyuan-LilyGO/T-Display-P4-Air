@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-03-30 16:02:11
+ * @LastEditTime: 2026-03-30 17:26:33
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -17,6 +17,9 @@ auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SD
 auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
 
 auto LR1121_Spi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Spi>(LR1121_MOSI, LR1121_SCLK, LR1121_MISO, SPI2_HOST, 0);
+
+auto Nrf9151_Uart_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Uart>(NRF9151_UART_RX, NRF9151_UART_TX,
+                                                                        NRF9151_UART_CTS, NRF9151_UART_RTS, UART_NUM_1);
 
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
 auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
@@ -98,79 +101,79 @@ void St25r3916_Rf_Task(void *arg)
     }
 }
 
-// void Esp32c5_Rf_Task(void *arg)
-// {
-//     printf("Esp32c5_Rf_Task (UDP Max Power Test) start\n");
+void Esp32c5_Rf_Task(void *arg)
+{
+    printf("Esp32c5_Rf_Task (udp max power test) start\n");
 
-//     uint8_t cycle = 0;
-//     char dummy_data[1024];
-//     memset(dummy_data, 0xA5, sizeof(dummy_data)); // 填充测试数据
+    uint8_t cycle = 0;
+    char dummy_data[1024];
+    memset(dummy_data, 0xA5, sizeof(dummy_data)); // 填充测试数据
 
-//     while (1)
-//     {
-//         cycle = (cycle + 1) % 2;
+    while (1)
+    {
+        cycle = (cycle + 1) % 2;
 
-//         // 切换频段的硬逻辑
-//         esp_wifi_stop();
-//         vTaskDelay(pdMS_TO_TICKS(200));
+        // 切换频段的硬逻辑
+        esp_wifi_stop();
+        vTaskDelay(pdMS_TO_TICKS(200));
 
-//         if (cycle == 0)
-//         {
-//             printf("mode: 2.4ghz (ch 6)\n");
-//             esp_wifi_set_band_mode(WIFI_BAND_MODE_2G_ONLY);
-//             esp_wifi_start();
-//             esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B);
-//             esp_wifi_set_channel(6, WIFI_SECOND_CHAN_NONE);
-//         }
-//         else
-//         {
-//             printf("\nmode: 5ghz (ch 36)\n");
-//             esp_wifi_set_band_mode(WIFI_BAND_MODE_5G_ONLY);
-//             esp_wifi_start();
-//             esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11A);
-//             esp_wifi_set_channel(36, WIFI_SECOND_CHAN_NONE);
-//         }
+        if (cycle == 0)
+        {
+            printf("mode: 2.4ghz (ch 6)\n");
+            esp_wifi_set_band_mode(WIFI_BAND_MODE_2G_ONLY);
+            esp_wifi_start();
+            esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B);
+            esp_wifi_set_channel(6, WIFI_SECOND_CHAN_NONE);
+        }
+        else
+        {
+            printf("mode: 5ghz (ch 36)\n");
+            esp_wifi_set_band_mode(WIFI_BAND_MODE_5G_ONLY);
+            esp_wifi_start();
+            esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11A);
+            esp_wifi_set_channel(36, WIFI_SECOND_CHAN_NONE);
+        }
 
-//         // 设置最大发射功率
-//         esp_wifi_set_max_tx_power(80);
+        // 设置最大发射功率
+        esp_wifi_set_max_tx_power(80);
 
-//         // 创建 udp socket 进行压力测试
-//         int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-//         if (sock < 0)
-//         {
-//             printf("socket fail\n");
-//             continue;
-//         }
+        // 创建 udp socket 进行压力测试
+        int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+        if (sock < 0)
+        {
+            printf("socket fail\n");
+            continue;
+        }
 
-//         struct sockaddr_in dest_addr;
-//         dest_addr.sin_addr.s_addr = inet_addr("255.255.255.255");
-//         dest_addr.sin_family = AF_INET;
-//         dest_addr.sin_port = htons(12345);
+        struct sockaddr_in dest_addr;
+        dest_addr.sin_addr.s_addr = inet_addr("255.255.255.255");
+        dest_addr.sin_family = AF_INET;
+        dest_addr.sin_port = htons(12345);
 
-//         printf("esp32c5 starting tx stress test for 5s\n");
+        printf("esp32c5 starting tx stress test for 5s\n");
 
-//         uint32_t start_time = xTaskGetTickCount();
-//         while (xTaskGetTickCount() - start_time < pdMS_TO_TICKS(5000))
-//         {
-//             // 通过向广播地址发送 udp 包，触发物理层发射
-//             sendto(sock, dummy_data, sizeof(dummy_data), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+        uint32_t start_time = xTaskGetTickCount();
+        while (xTaskGetTickCount() - start_time < pdMS_TO_TICKS(5000))
+        {
+            // 通过向广播地址发送 udp 包，触发物理层发射
+            sendto(sock, dummy_data, sizeof(dummy_data), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
 
-//             // 极短延时或不延时
-//             vTaskDelay(pdMS_TO_TICKS(10));
-//         }
+            // 极短延时或不延时
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
 
-//         close(sock);
+        close(sock);
 
-//         if (cycle == 0)
-//         {
-//             printf("esp32c5 2.4ghz test finish\n");
-//         }
-//         else
-//         {
-//             printf("esp32c5 5ghz test finish\n");
-//         }
-//     }
-// }
+        if (cycle == 0)
+        {
+            printf("esp32c5 2.4ghz test finish\n");
+        }
+        else
+        {
+            printf("esp32c5 5ghz test finish\n");
+        }
+    }
+}
 
 void Wifi_Init_Sta(void)
 {
@@ -210,6 +213,141 @@ void Wifi_Init_Sta(void)
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
+std::string send_at_command(const std::string &cmd, int timeout_ms = 3000)
+{
+    std::string full_cmd = cmd + "\r\n";
+    Nrf9151_Uart_Bus->write((uint8_t *)full_cmd.c_str(), full_cmd.length());
+
+    // 清空输入缓存，避免残留数据干扰
+    Nrf9151_Uart_Bus->clear_rx_buffer_data();
+
+    std::string response;
+    uint32_t start = xTaskGetTickCount();
+    while ((xTaskGetTickCount() - start) < pdMS_TO_TICKS(timeout_ms))
+    {
+        size_t len = Nrf9151_Uart_Bus->get_rx_buffer_length();
+        if (len > 0)
+        {
+            std::vector<uint8_t> buf(len + 1, 0);
+            Nrf9151_Uart_Bus->read(buf.data(), len);
+            response.append((char *)buf.data(), len);
+            // 检测到 OK 或 ERROR 即认为指令执行完毕
+            if (response.find("OK") != std::string::npos ||
+                response.find("ERROR") != std::string::npos)
+            {
+                break;
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    // 去除末尾的换行符，便于打印
+    while (!response.empty() && (response.back() == '\r' || response.back() == '\n'))
+    {
+        response.pop_back();
+    }
+    return response;
+}
+
+bool check_sim_card()
+{
+    std::string resp = send_at_command("AT+CPIN?");
+    return (resp.find("+CPIN: READY") != std::string::npos);
+}
+
+bool is_network_registered()
+{
+    std::string resp = send_at_command("AT+CEREG?");
+    // 解析响应，例如 +CEREG: 2,2,... 或 +CEREG: 2,5,...
+    size_t pos = resp.find("+CEREG:");
+    if (pos != std::string::npos)
+    {
+        // 跳过 "+CEREG: " 后找到第一个逗号
+        pos = resp.find(',', pos);
+        if (pos != std::string::npos)
+        {
+            pos++; // 移动到状态字符
+            char stat = resp[pos];
+            return (stat == '2' || stat == '5');
+        }
+    }
+    return false;
+}
+
+void Nrf9151_At_Task(void *arg)
+{
+    printf("Nrf9151_At_Task started\n");
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // 配置系统模式：LTE-M+NB-IoT+GNSS 支持，LTE 优先
+    printf("configuring system mode...\n");
+    std::string resp = send_at_command("AT%XSYSTEMMODE=1,1,1,1");
+    printf("response: %s\n", resp.c_str());
+
+    // 开启 modem 全功能
+    printf("setting CFUN=1...\n");
+    resp = send_at_command("AT+CFUN=1");
+    printf("Response: %s\n", resp.c_str());
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    // 检查 SIM 卡
+    printf("checking sim card...\n");
+    if (check_sim_card() == false)
+    {
+        printf("sim card not ready\n");
+    }
+    else
+    {
+        printf("sim card ready\n");
+    }
+
+    // 启用网络注册 URC
+    printf("enabling CEREG URC...\n");
+    resp = send_at_command("AT+CEREG=2");
+    printf("response: %s\n", resp.c_str());
+
+    // 等待网络注册成功（最多等待 2 分钟，每 5 秒查询一次）
+    printf("waiting for network registration...\n");
+    bool registered = false;
+    for (int i = 0; i < 24; i++)
+    {
+        // 24 * 5 = 120 秒
+        if (is_network_registered())
+        {
+            registered = true;
+            printf("network registered successfully\n");
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+    if (!registered)
+    {
+        printf("network registration timeout\n");
+    }
+
+    // 开启 GNSS 功能
+    printf("enabling GNSS...\n");
+    resp = send_at_command("AT#XGNSS=1,0,0,0");
+    printf("response: %s\n", resp.c_str());
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    // 循环查询实时时间
+    while (1)
+    {
+        resp = send_at_command("AT+CCLK?");
+        if (resp.find("+CCLK:") != std::string::npos)
+        {
+            printf("current time: %s\n", resp.c_str());
+        }
+        else
+        {
+            printf("time query failed: %s\n", resp.c_str());
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+
 extern "C" void app_main(void)
 {
     printf("Ciallo\n");
@@ -220,6 +358,8 @@ extern "C" void app_main(void)
 
     Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
     Xl9555->pin_mode(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_mode(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9555->pin_mode(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
     Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     // vTaskDelay(pdMS_TO_TICKS(100));
@@ -229,10 +369,16 @@ extern "C" void app_main(void)
     // vTaskDelay(pdMS_TO_TICKS(100));
 
     Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(100));
     Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9555->pin_write(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     vTaskDelay(pdMS_TO_TICKS(100));
     Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9555->pin_write(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(100));
 
     int16_t status = Lr1121.begin(2450.0, 406.25, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 13, 8);
@@ -270,7 +416,10 @@ extern "C" void app_main(void)
 
     Wifi_Init_Sta();
 
+    Nrf9151_Uart_Bus->begin();
+
     xTaskCreate(Lr1121_Rf_Task, "Lr1121_Rf_Task", 4 * 1024, NULL, 3, NULL);
     xTaskCreate(St25r3916_Rf_Task, "St25r3916_Rf_Task", 4 * 1024, NULL, 3, NULL);
-    // xTaskCreate(Esp32c5_Rf_Task, "Esp32c5_Rf_Task", 4 * 1024, NULL, 3, NULL);
+    xTaskCreate(Esp32c5_Rf_Task, "Esp32c5_Rf_Task", 4 * 1024, NULL, 3, NULL);
+    xTaskCreate(Nrf9151_At_Task, "Nrf9151_At_Task", 8 * 1024, NULL, 3, NULL);
 }
