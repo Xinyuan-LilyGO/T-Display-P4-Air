@@ -45,6 +45,8 @@ elseif(CONFIG_EXAMPLE_BUILD_ES8388_SD_MP3)
     set(project_path "examples/es8388_sd_mp3/")
 elseif(CONFIG_EXAMPLE_BUILD_NRF9151_UART)
     set(project_path "examples/nrf9151_uart/")
+elseif(CONFIG_EXAMPLE_BUILD_RF_TEST)
+    set(project_path "examples/rf_test/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 

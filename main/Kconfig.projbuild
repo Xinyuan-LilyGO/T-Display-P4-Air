@@ -56,6 +56,8 @@ menu "Example Configuration"
                 bool "es8388_sd_mp3"
             config EXAMPLE_BUILD_NRF9151_UART
                 bool "nrf9151_uart"
+            config EXAMPLE_BUILD_RF_TEST
+                bool "rf_test"
     endchoice
 
     choice
