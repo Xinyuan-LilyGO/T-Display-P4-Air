@@ -6,6 +6,7 @@
 |--------|------|
 | `AT%XSYSTEMMODE=1,1,1,1` | 配置系统模式：`AT%XSYSTEMMODE=<LTE_M_support>,<NB_IoT_support>,<GNSS_support>,<LTE_preference>` |
 | `AT+CFUN=1` | 开启 modem 全功能 |
+| `AT+CPIN?` | 查询SIM卡插入状态 |
 | `AT+CEREG=2` | 启用网络注册状态的非请求结果码（URC） |
 | `AT+CEREG?` | 查询网络注册状态 |
 | `AT+CESQ` | 查信号质量 |
