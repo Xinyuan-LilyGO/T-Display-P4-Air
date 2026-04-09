@@ -47,6 +47,8 @@ elseif(CONFIG_EXAMPLE_BUILD_NRF9151_UART)
     set(project_path "examples/nrf9151_uart/")
 elseif(CONFIG_EXAMPLE_BUILD_RF_TEST)
     set(project_path "examples/rf_test/")
+elseif(CONFIG_EXAMPLE_BUILD_SLEEP)
+    set(project_path "examples/sleep/")
 endif()
         
 idf_component_register(SRC_DIRS ${project_path} 

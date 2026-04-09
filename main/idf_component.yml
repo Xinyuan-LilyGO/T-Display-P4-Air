@@ -20,6 +20,7 @@ dependencies:
     override_path: "../libraries/esp_video_app_video"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   arduino_cpp_bus_driver:
     override_path: "../libraries/arduino_cpp_bus_driver"
@@ -29,6 +30,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP_QMC6310N} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   SensorLib:
     override_path: "../libraries/SensorLib"
@@ -36,6 +38,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_QMC6310N} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP_QMC6310N} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   ST25R3916:
     override_path: "../libraries/ST25R3916"
@@ -71,6 +74,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   espressif/esp_wifi_remote:
     version: "1.3.2"
@@ -80,6 +84,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   espressif/iperf-cmd:
     version: "^0.1.1"
@@ -108,3 +113,4 @@ dependencies:
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_RADIOLIB_LR1121_SEND_RECEIVE} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
