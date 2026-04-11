@@ -19,7 +19,7 @@
 size_t Cycle_Time = 0;
 
 auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_1);
+auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
 auto Es8388_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(ES8388_SDA, ES8388_SCL, I2C_NUM_1);
 
 auto Es8388_Iis_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iis>(ES8388_ADC_DATA, ES8388_DAC_DATA, ES8388_WS_LRCK, ES8388_BCLK, ES8388_MCLK,
@@ -27,7 +27,7 @@ auto Es8388_Iis_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iis>(ES8388_ADC_
                                                                      i2s_clock_src_t::I2S_CLK_SRC_APLL);
 
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
+auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
 auto Esp32p4 = std::make_unique<Cpp_Bus_Driver::Tool>();
 
 extern "C" void app_main(void)
@@ -38,17 +38,17 @@ extern "C" void app_main(void)
 
     Axp517->begin();
 
-    Xl9555->begin();
+    Xl9535->begin();
 
-    Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
-    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
-    Xl9555->pin_mode(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
-    Xl9555->pin_write(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
-    Es8388_Iic_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
+    Es8388_Iic_Bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
     Es8388_Iic_Bus->begin(-1, ES8388_IIC_ADDRESS);
 
     Es8388_Iis_Bus->begin(AUDIO_MCLK_MULTIPLE, AUDIO_SAMPLE_RATE, AUDIO_BITS_PER_SAMPLE);

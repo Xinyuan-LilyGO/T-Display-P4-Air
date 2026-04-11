@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-03-31 09:24:53
- * @LastEditTime: 2026-04-09 18:11:00
+ * @LastEditTime: 2026-04-11 10:45:41
  * @License: GPL 3.0
  */
 #include "cpp_bus_driver_library.h"
@@ -49,7 +49,7 @@ int32_t fps_count;
 int64_t start_time;
 
 // IIC 1
-auto Xl9555_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9555_SDA, XL9555_SCL, I2C_NUM_0);
+auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_0);
 
 // IIC 2
 auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_1);
@@ -80,7 +80,7 @@ auto Screen_Mipi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Mipi>(SCREEN_WI
                                                                     } }(SCREEN_BITS_PER_PIXEL));
 
 // IIC 1
-auto Xl9555 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9555_Iic_Bus, XL9555_IIC_ADDRESS);
+auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
 
 // IIC 2
 auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
@@ -162,22 +162,22 @@ void Device_Sleep_Status(bool status)
 #if defined CONFIG_SCREEN_TYPE_HI8561
 
 #elif defined CONFIG_SCREEN_TYPE_RM69A10
-        Xl9555->pin_mode(XL9555_TOUCH_INT, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-        Xl9555->pin_write(XL9555_TOUCH_INT, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_mode(XL9535_TOUCH_INT, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+        Xl9535->pin_write(XL9535_TOUCH_INT, Cpp_Bus_Driver::Xl95x5::Value::LOW);
 
         Gt9895->set_sleep();
 #else
 #error "no macro definition is set"
 #endif
 
-        Xl9555->pin_write(XL9555_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-        Xl9555->pin_write(XL9555_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
 #endif
 
-        Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-        Xl9555->pin_write(XL9555_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-        Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-        Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+        Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     }
     else
     {
@@ -466,33 +466,33 @@ extern "C" void app_main(void)
 
     Axp517->begin();
 
-    Xl9555->begin();
+    Xl9535->begin();
 
 #if defined USE_SCREEN
-    Xl9555->pin_mode(XL9555_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 #endif
-    Xl9555->pin_mode(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_mode(XL9555_USBPHY_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_LED_1, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_mode(XL9535_USBPHY_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
 
-    Xl9555->pin_write(XL9555_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    Xl9555->pin_write(XL9555_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    Xl9555->pin_write(XL9555_USBPHY_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_NS4150_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_NRF9151_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_USBPHY_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 
-    Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     // vTaskDelay(pdMS_TO_TICKS(100));
-    // Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    // Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     // vTaskDelay(pdMS_TO_TICKS(100));
-    // Xl9555->pin_write(XL9555_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    // Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     // vTaskDelay(pdMS_TO_TICKS(100));
 
-    Xl9555->pin_write(XL9555_LED_1, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_LED_1, Cpp_Bus_Driver::Xl95x5::Value::LOW);
 
     Sgm38121_Iic_Bus->set_bus_handle(Axp517_Iic_Bus->get_bus_handle());
     if (Sgm38121->begin() == false)
@@ -528,25 +528,25 @@ extern "C" void app_main(void)
     Lilygo_Device_Driver::Init_Ldo_Channel_Power(4, 3300);
 
 #if defined USE_SCREEN
-    Xl9555->pin_write(XL9555_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    Xl9555->pin_write(XL9555_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 #endif
-    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    Xl9555->pin_write(XL9555_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(100));
 #if defined USE_SCREEN
-    Xl9555->pin_write(XL9555_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    Xl9555->pin_write(XL9555_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::LOW);
 #endif
-    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    Xl9555->pin_write(XL9555_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     vTaskDelay(pdMS_TO_TICKS(100));
 #if defined USE_SCREEN
-    Xl9555->pin_write(XL9555_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    Xl9555->pin_write(XL9555_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_SCREEN_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_TOUCH_RST, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
 #endif
-    Xl9555->pin_write(XL9555_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    Xl9555->pin_write(XL9555_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_SD_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(1000));
 
 #if defined USE_SCREEN
@@ -570,13 +570,13 @@ extern "C" void app_main(void)
     Screen->begin(SCREEN_MIPI_DSI_DPI_CLK_MHZ, SCREEN_LANE_BIT_RATE_MBPS);
 
 #if defined CONFIG_SCREEN_TYPE_HI8561
-    Hi8561_Iic_Touch_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
+    Hi8561_Iic_Touch_Bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
 
     Hi8561_Touch->begin();
 
 #elif defined CONFIG_SCREEN_TYPE_RM69A10
 
-    Gt9895_Touch_Iic_Bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
+    Gt9895_Touch_Iic_Bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
 
     Gt9895->begin();
 
@@ -602,12 +602,12 @@ extern "C" void app_main(void)
     // RAM播放
     Aw86224->init_ram_mode(Cpp_Bus_Driver::aw862xx_haptic_ram_12k_0809_170, sizeof(Cpp_Bus_Driver::aw862xx_haptic_ram_12k_0809_170));
 
-    Xl9555->pin_mode(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_mode(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
+    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
+    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
     vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9555->pin_write(XL9555_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
     vTaskDelay(pdMS_TO_TICKS(100));
 
     int16_t status = Lr1121.begin(2450.0, 406.25, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 13, 8);
@@ -645,7 +645,7 @@ extern "C" void app_main(void)
     Wire1._bus->set_bus_handle(Axp517_Iic_Bus->get_bus_handle());
     Bhi260ap_Init();
 
-    Wire._bus->set_bus_handle(Xl9555_Iic_Bus->get_bus_handle());
+    Wire._bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
     Qmc6310n_Init();
 
 #if defined USE_SCREEN

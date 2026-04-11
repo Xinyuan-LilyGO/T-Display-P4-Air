@@ -14,7 +14,7 @@ menu "Example Configuration"
                 bool "iic_scan"
             config EXAMPLE_BUILD_SCREEN_LVGL
                 bool "screen_lvgl"
-            config EXAMPLE_BUILD_XL9555
+            config EXAMPLE_BUILD_XL9535
                 bool "xl9555"
             config EXAMPLE_BUILD_AXP517
                 bool "axp517"
