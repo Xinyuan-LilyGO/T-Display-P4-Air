@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-25 09:09:45
- * @LastEditTime: 2026-04-13 11:07:55
+ * @LastEditTime: 2026-04-13 11:49:25
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -139,7 +139,7 @@ size_t parse_and_print_id3v2(FILE *f)
     }
     else
     {
-        printf("Input #0, mp3, from '%s':\n", "input.mp3");
+        printf("Error metadata input from '%s':\n", MP3_FILE_PATH);
         rewind(f);
     }
 
@@ -266,7 +266,7 @@ size_t parse_and_print_id3v2(FILE *f)
     }
     else
     {
-        printf("Could not find valid MP3 header\n");
+        printf("The ID3v2 header does not exist\n");
     }
 
     // 恢复指针到有效数据的开始
@@ -484,7 +484,7 @@ extern "C" void app_main(void)
     printf("codec device opened successfully\n");
 
     // 设置DAC音量（0-100）
-    assert = esp_codec_dev_set_out_vol(codec_dev, 80);
+    assert = esp_codec_dev_set_out_vol(codec_dev, 60);
     if (assert != ESP_OK)
     {
         printf("esp_codec_dev_set_out_vol fail (error code: %#X)\n", assert);
