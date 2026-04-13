@@ -56,7 +56,7 @@ idf_component_register(SRC_DIRS ${project_path}
 
 if(CONFIG_EXAMPLE_BUILD_SPIFFS)
     # 配置 SPIFFS 自动烧录
-    spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
+    spiffs_create_partition_image(storage ../libraries/private_library/spiffs FLASH_IN_PROJECT)
 elseif(CONFIG_EXAMPLE_BUILD_ES8388_SPIFFS_MP3)
-    spiffs_create_partition_image(storage ../components/private_library/spiffs FLASH_IN_PROJECT)
+    spiffs_create_partition_image(storage ../libraries/private_library/spiffs FLASH_IN_PROJECT)
 endif()
