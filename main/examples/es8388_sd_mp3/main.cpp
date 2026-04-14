@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-25 09:09:45
- * @LastEditTime: 2026-04-13 17:10:51
+ * @LastEditTime: 2026-04-14 09:52:52
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -241,7 +241,7 @@ size_t parse_and_print_id3v2(FILE *f)
         if (sample_rate != Audio_Sample_Rate)
         {
             printf("match sample rate %ldhz -> %ldhz\n", Audio_Sample_Rate, sample_rate);
-            
+
             esp_codec_dev_close(codec_dev);
 
             esp_codec_dev_sample_info_t fs =
@@ -342,7 +342,7 @@ extern "C" void app_main(void)
 
     vTaskDelay(pdMS_TO_TICKS(100));
 
-    if (Lilygo_Device_Driver::Sdmmc_Init(SD_BASE_PATH) == false)
+    if (Lilygo_Device_Driver::Sdmmc_Init(SD_BASE_PATH, SDMMC_FREQ_52M) == false)
     {
         printf("Sdmmc_Init fail\n");
     }
