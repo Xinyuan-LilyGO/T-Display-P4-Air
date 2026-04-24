@@ -16,3 +16,6 @@
 [submodule "libraries/NFC-RFAL"]
 	path = libraries/NFC-RFAL
 	url = https://github.com/Llgok/NFC-RFAL.git
+[submodule "libraries/radiolib_cpp_bus_driver"]
+	path = libraries/radiolib_cpp_bus_driver
+	url = https://github.com/Llgok/radiolib_cpp_bus_driver.git
