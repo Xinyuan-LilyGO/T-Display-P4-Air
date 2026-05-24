@@ -1,85 +1,73 @@
 /*
- * @Description: None
+ * @Description: spiffs
  * @Author: LILYGO_L
  * @Date: 2026-02-02 17:40:30
- * @LastEditTime: 2026-03-12 17:21:22
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
-#include "esp_spiffs.h"
+#include <cstdio>
+#include <cstring>
 #include <sys/stat.h>
+#include <unistd.h>
 
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
+#include "../common/t_display_p4_air_example.h"
+#include "esp_spiffs.h"
 
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+  auto& driver = t_display_p4_air_example::InitDriver();
 
-    Axp517->begin();
+  printf("Initializing spiffs\n");
+  esp_vfs_spiffs_conf_t conf;
+  if (!driver.InitSpiffs(
+          t_display_p4_air_example::device::spiffs::kBasePath, conf)) {
+    printf("InitSpiffs failed\n");
+    return;
+  }
 
-    printf("initializing spiffs\n");
+  printf("Opening file\n");
+  FILE* file = fopen("/spiffs/hello.txt", "w");
+  if (file == NULL) {
+    printf("Failed to open file for writing\n");
+    return;
+  }
+  fprintf(file, "Hello World!\n");
+  fclose(file);
+  printf("File written\n");
 
-    esp_vfs_spiffs_conf_t conf;
-    Lilygo_Device_Driver::Spiffs_Init(SPIFFS_BASE_PATH, conf);
+  struct stat st;
+  if (stat("/spiffs/foo.txt", &st) == 0) {
+    unlink("/spiffs/foo.txt");
+  }
 
-    // Use POSIX and C standard library functions to work with files.
-    // First create a file.
-    printf("opening file\n");
-    FILE *f = fopen("/spiffs/hello.txt", "w");
-    if (f == NULL)
-    {
-        printf("fail to open file for writing\n");
-        return;
-    }
-    fprintf(f, "Hello World!\n");
-    fclose(f);
-    printf("file written\n");
+  printf("Renaming file\n");
+  if (rename("/spiffs/hello.txt", "/spiffs/foo.txt") != 0) {
+    printf("Rename failed\n");
+    return;
+  }
 
-    // Check if destination file exists before renaming
-    struct stat st;
-    if (stat("/spiffs/foo.txt", &st) == 0)
-    {
-        // Delete it if it exists
-        unlink("/spiffs/foo.txt");
-    }
+  printf("Reading file\n");
+  file = fopen("/spiffs/foo.txt", "r");
+  if (file == NULL) {
+    printf("Failed to open file for reading\n");
+    return;
+  }
 
-    // Rename original file
-    printf("renaming file\n");
-    if (rename("/spiffs/hello.txt", "/spiffs/foo.txt") != 0)
-    {
-        printf("rename fail\n");
-        return;
-    }
+  char line[64] = {};
+  fgets(line, sizeof(line), file);
+  fclose(file);
 
-    // Open renamed file for reading
-    printf("reading file\n");
-    f = fopen("/spiffs/foo.txt", "r");
-    if (f == NULL)
-    {
-        printf("fail to open file for reading\n");
-        return;
-    }
-    char line[64];
-    fgets(line, sizeof(line), f);
-    fclose(f);
-    // strip newline
-    char *pos = strchr(line, '\n');
-    if (pos)
-    {
-        *pos = '\0';
-    }
-    printf("read from file: '%s'\n", line);
+  char* pos = strchr(line, '\n');
+  if (pos != nullptr) {
+    *pos = '\0';
+  }
+  printf("Read from file: '%s'\n", line);
 
-    // All done, unmount partition and disable SPIFFS
-    esp_vfs_spiffs_unregister(conf.partition_label);
-    printf("spiffs unmounted\n");
+  esp_vfs_spiffs_unregister(conf.partition_label);
+  printf("Spiffs unmounted\n");
 
-    while (1)
-    {
-        printf("Ciallo\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
+  while (1) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 }

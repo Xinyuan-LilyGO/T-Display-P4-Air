@@ -1,307 +1,284 @@
 /*
- * @Description: None
+ * @Description: ir_nec_transceiver
  * @Author: LILYGO_L
  * @Date: 2026-03-03 10:33:23
- * @LastEditTime: 2026-03-12 17:20:40
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
-#include "driver/rmt_tx.h"
+#include "../common/t_display_p4_air_example.h"
+
 #include "driver/rmt_rx.h"
-#include "ir_nec_encoder.h"
+#include "driver/rmt_tx.h"
 #include "esp_err.h"
+#include "ir_nec_encoder.h"
 
-// NEC timing spec
-#define NEC_LEADING_CODE_DURATION_0 9000
-#define NEC_LEADING_CODE_DURATION_1 4500
-#define NEC_PAYLOAD_ZERO_DURATION_0 560
-#define NEC_PAYLOAD_ZERO_DURATION_1 560
-#define NEC_PAYLOAD_ONE_DURATION_0 560
-#define NEC_PAYLOAD_ONE_DURATION_1 1690
-#define NEC_REPEAT_CODE_DURATION_0 9000
-#define NEC_REPEAT_CODE_DURATION_1 2250
+namespace {
 
-rmt_channel_handle_t rx_channel = NULL;
-rmt_channel_handle_t tx_channel = NULL;
+constexpr uint32_t kNecLeadingCodeDuration0 = 9000;
+constexpr uint32_t kNecLeadingCodeDuration1 = 4500;
+constexpr uint32_t kNecPayloadZeroDuration0 = 560;
+constexpr uint32_t kNecPayloadZeroDuration1 = 560;
+constexpr uint32_t kNecPayloadOneDuration0 = 560;
+constexpr uint32_t kNecPayloadOneDuration1 = 1690;
+constexpr uint32_t kNecRepeatCodeDuration0 = 9000;
+constexpr uint32_t kNecRepeatCodeDuration1 = 2250;
 
-QueueHandle_t receive_queue;
+rmt_channel_handle_t g_rx_channel = nullptr;
+rmt_channel_handle_t g_tx_channel = nullptr;
+QueueHandle_t g_receive_queue = nullptr;
+rmt_symbol_word_t g_raw_symbols[64] = {};
+rmt_encoder_handle_t g_nec_encoder = nullptr;
 
-// 准备接收缓冲
-rmt_symbol_word_t raw_symbols[64];
-rmt_encoder_handle_t nec_encoder = NULL;
+uint16_t g_nec_code_address = 0;
+uint16_t g_nec_code_command = 0;
 
-// NEC 解码结果
-uint16_t s_nec_code_address = 0;
-uint16_t s_nec_code_command = 0;
-
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
-
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
-auto Esp32p4 = std::make_unique<Cpp_Bus_Driver::Tool>();
-
-bool Rmt_Rx_Done_Callback(rmt_channel_handle_t channel, const rmt_rx_done_event_data_t *edata, void *user_data)
-{
-    BaseType_t high_task_wakeup = pdFALSE;
-    QueueHandle_t receive_queue = (QueueHandle_t)user_data;
-
-    // send the received rmt symbols to the parser task
-    xQueueSendFromISR(receive_queue, edata, &high_task_wakeup);
-
-    return high_task_wakeup == pdTRUE;
+bool RmtRxDoneCallback(rmt_channel_handle_t channel,
+    const rmt_rx_done_event_data_t* edata, void* user_data) {
+  BaseType_t high_task_wakeup = pdFALSE;
+  QueueHandle_t queue = static_cast<QueueHandle_t>(user_data);
+  xQueueSendFromISR(queue, edata, &high_task_wakeup);
+  return high_task_wakeup == pdTRUE;
 }
 
-// 检查 duration 是否在预期范围内（± margin）
-static inline bool nec_check_in_range(uint32_t signal_duration, uint32_t spec_duration)
-{
-    return (signal_duration < (spec_duration + INFRARED_NEC_DECODE_MARGIN)) &&
-           (signal_duration > (spec_duration - INFRARED_NEC_DECODE_MARGIN));
+bool NecCheckInRange(uint32_t signal_duration, uint32_t spec_duration) {
+  return signal_duration <
+             (spec_duration +
+                 t_display_p4_air_example::device::infrared::kNecDecodeMargin) &&
+         signal_duration >
+             (spec_duration -
+                 t_display_p4_air_example::device::infrared::kNecDecodeMargin);
 }
 
-// 判断是否为逻辑 0
-bool nec_parse_logic0(rmt_symbol_word_t *rmt_nec_symbols)
-{
-    return nec_check_in_range(rmt_nec_symbols->duration0, NEC_PAYLOAD_ZERO_DURATION_0) &&
-           nec_check_in_range(rmt_nec_symbols->duration1, NEC_PAYLOAD_ZERO_DURATION_1);
+bool NecParseLogic0(rmt_symbol_word_t* rmt_nec_symbols) {
+  return NecCheckInRange(
+             rmt_nec_symbols->duration0, kNecPayloadZeroDuration0) &&
+         NecCheckInRange(
+             rmt_nec_symbols->duration1, kNecPayloadZeroDuration1);
 }
 
-// 判断是否为逻辑 1
-bool nec_parse_logic1(rmt_symbol_word_t *rmt_nec_symbols)
-{
-    return nec_check_in_range(rmt_nec_symbols->duration0, NEC_PAYLOAD_ONE_DURATION_0) &&
-           nec_check_in_range(rmt_nec_symbols->duration1, NEC_PAYLOAD_ONE_DURATION_1);
+bool NecParseLogic1(rmt_symbol_word_t* rmt_nec_symbols) {
+  return NecCheckInRange(rmt_nec_symbols->duration0, kNecPayloadOneDuration0) &&
+         NecCheckInRange(rmt_nec_symbols->duration1, kNecPayloadOneDuration1);
 }
 
-// 解析标准 NEC 帧（地址 + 命令）
-bool nec_parse_frame(rmt_symbol_word_t *rmt_nec_symbols)
-{
-    rmt_symbol_word_t *cur = rmt_nec_symbols;
-    uint16_t address = 0;
-    uint16_t command = 0;
+bool NecParseFrame(rmt_symbol_word_t* rmt_nec_symbols) {
+  rmt_symbol_word_t* current = rmt_nec_symbols;
+  uint16_t address = 0;
+  uint16_t command = 0;
 
-    // 检查 leading code
-    bool valid_leading_code = nec_check_in_range(cur->duration0, NEC_LEADING_CODE_DURATION_0) &&
-                              nec_check_in_range(cur->duration1, NEC_LEADING_CODE_DURATION_1);
-    if (!valid_leading_code)
-    {
-        return false;
+  bool valid_leading_code =
+      NecCheckInRange(current->duration0, kNecLeadingCodeDuration0) &&
+      NecCheckInRange(current->duration1, kNecLeadingCodeDuration1);
+  if (!valid_leading_code) {
+    return false;
+  }
+  current++;
+
+  for (int i = 0; i < 16; i++) {
+    if (NecParseLogic1(current)) {
+      address |= (1 << i);
+    } else if (!NecParseLogic0(current)) {
+      return false;
     }
-    cur++;
+    current++;
+  }
 
-    // 解析 16 bit address
-    for (int i = 0; i < 16; i++)
-    {
-        if (nec_parse_logic1(cur))
-        {
-            address |= (1 << i);
-        }
-        else if (nec_parse_logic0(cur))
-        {
-            // address bit already 0, no need to clear
-        }
-        else
-        {
-            return false;
-        }
-        cur++;
+  for (int i = 0; i < 16; i++) {
+    if (NecParseLogic1(current)) {
+      command |= (1 << i);
+    } else if (!NecParseLogic0(current)) {
+      return false;
     }
+    current++;
+  }
 
-    // 解析 16 bit command
-    for (int i = 0; i < 16; i++)
-    {
-        if (nec_parse_logic1(cur))
-        {
-            command |= (1 << i);
-        }
-        else if (nec_parse_logic0(cur))
-        {
-            // command bit already 0
-        }
-        else
-        {
-            return false;
-        }
-        cur++;
-    }
-
-    // 保存结果
-    s_nec_code_address = address;
-    s_nec_code_command = command;
-    return true;
+  g_nec_code_address = address;
+  g_nec_code_command = command;
+  return true;
 }
 
-// 检查是否为 repeat 码
-bool nec_parse_frame_repeat(rmt_symbol_word_t *rmt_nec_symbols)
-{
-    return nec_check_in_range(rmt_nec_symbols->duration0, NEC_REPEAT_CODE_DURATION_0) &&
-           nec_check_in_range(rmt_nec_symbols->duration1, NEC_REPEAT_CODE_DURATION_1);
+bool NecParseFrameRepeat(rmt_symbol_word_t* rmt_nec_symbols) {
+  return NecCheckInRange(
+             rmt_nec_symbols->duration0, kNecRepeatCodeDuration0) &&
+         NecCheckInRange(rmt_nec_symbols->duration1, kNecRepeatCodeDuration1);
 }
 
-void parse_nec_frame(rmt_symbol_word_t *rmt_nec_symbols, size_t symbol_num)
-{
-    printf("----------nec frame start----------\n");
+void ParseNecFrame(rmt_symbol_word_t* rmt_nec_symbols, size_t symbol_num) {
+  printf("----------nec frame start----------\n");
+  for (size_t i = 0; i < symbol_num; i++) {
+    printf("{%d:%d},{%d:%d}\n", rmt_nec_symbols[i].level0,
+        rmt_nec_symbols[i].duration0, rmt_nec_symbols[i].level1,
+        rmt_nec_symbols[i].duration1);
+  }
+  printf("----------nec frame end----------\n");
 
-    // 打印原始符号
-    for (size_t i = 0; i < symbol_num; i++)
-    {
-        printf("{%d:%d},{%d:%d}\n",
-               rmt_nec_symbols[i].level0, rmt_nec_symbols[i].duration0,
-               rmt_nec_symbols[i].level1, rmt_nec_symbols[i].duration1);
-    }
-
-    printf("----------nec frame end----------\n");
-
-    printf("nec parse: ");
-
-    switch (symbol_num)
-    {
-    case 34: // nec normal frame（典型 34 个符号：leading + 32 bits + ending）
-        if (nec_parse_frame(rmt_nec_symbols))
-        {
-            printf("address=%#X, command=%#X\n", s_nec_code_address, s_nec_code_command);
-        }
-        else
-        {
-            printf("invalid normal frame\n");
-        }
-        break;
-
-    case 2: // nec repeat frame
-        if (nec_parse_frame_repeat(rmt_nec_symbols))
-        {
-            printf("address=%#X, command=%#X, repeat\n", s_nec_code_address, s_nec_code_command);
-        }
-        else
-        {
-            printf("invalid repeat frame\n");
-        }
-        break;
-
+  printf("nec parse: ");
+  switch (symbol_num) {
+    case 34:
+      if (NecParseFrame(rmt_nec_symbols)) {
+        printf("address=%#X, command=%#X\n", g_nec_code_address,
+            g_nec_code_command);
+      } else {
+        printf("invalid normal frame\n");
+      }
+      break;
+    case 2:
+      if (NecParseFrameRepeat(rmt_nec_symbols)) {
+        printf("address=%#X, command=%#X, repeat\n", g_nec_code_address,
+            g_nec_code_command);
+      } else {
+        printf("invalid repeat frame\n");
+      }
+      break;
     default:
-        printf("unknown nec frame (symbol count: %zu)\n", symbol_num);
-        break;
-    }
+      printf("unknown nec frame (symbol count: %zu)\n", symbol_num);
+      break;
+  }
 }
 
-bool Rmt_Init(void)
-{
-    printf("create rmt rx channel\n");
-    rmt_rx_channel_config_t rx_channel_cfg =
-        {
-            .gpio_num = static_cast<gpio_num_t>(INFRARED_RX),
-            .clk_src = RMT_CLK_SRC_DEFAULT,
-            .resolution_hz = INFRARED_RESOLUTION_HZ,
-            .mem_block_symbols = 64,
-        };
-    ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_channel_cfg, &rx_channel));
-
-    printf("register rx done callback\n");
-    receive_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
-    if (receive_queue == NULL)
-    {
-        printf("create receive queue failed\n");
-        return false;
-    }
-
-    rmt_rx_event_callbacks_t cbs = {
-        .on_recv_done = Rmt_Rx_Done_Callback,
-    };
-    ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rx_channel, &cbs, receive_queue));
-
-    printf("create rmt tx channel\n");
-    rmt_tx_channel_config_t tx_channel_cfg =
-        {
-            .gpio_num = static_cast<gpio_num_t>(INFRARED_TX),
-            .clk_src = RMT_CLK_SRC_DEFAULT,
-            .resolution_hz = INFRARED_RESOLUTION_HZ,
-            .mem_block_symbols = 64,
-            .trans_queue_depth = 4,
-        };
-    ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_channel_cfg, &tx_channel));
-
-    printf("modulate carrier to tx channel\n");
-    rmt_carrier_config_t carrier_cfg =
-        {
-            .frequency_hz = 38000,
-            .duty_cycle = 0.33f,
-        };
-    ESP_ERROR_CHECK(rmt_apply_carrier(tx_channel, &carrier_cfg));
-
-    printf("install ir nec encoder\n");
-    ir_nec_encoder_config_t nec_encoder_cfg =
-        {
-            .resolution = INFRARED_RESOLUTION_HZ,
-        };
-    ESP_ERROR_CHECK(rmt_new_ir_nec_encoder(&nec_encoder_cfg, &nec_encoder));
-
-    printf("enable rmt tx and rx channels\n");
-    ESP_ERROR_CHECK(rmt_enable(tx_channel));
-    ESP_ERROR_CHECK(rmt_enable(rx_channel));
-
-    rmt_receive_config_t receive_config =
-        {
-            .signal_range_min_ns = 1250,
-            .signal_range_max_ns = 12000000,
-        };
-
-    // 第一次启动接收
-    ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
-
-    return true;
+rmt_receive_config_t CreateReceiveConfig() {
+  return {
+      .signal_range_min_ns = 1250,
+      .signal_range_max_ns = 12000000,
+  };
 }
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+bool StartReceive() {
+  auto receive_config = CreateReceiveConfig();
+  esp_err_t result =
+      rmt_receive(g_rx_channel, g_raw_symbols, sizeof(g_raw_symbols),
+          &receive_config);
+  if (result != ESP_OK) {
+    printf("rmt_receive failed (error code: %#X)\n", result);
+    return false;
+  }
+  return true;
+}
 
-    Esp32p4->pin_mode(ESP32P4_BOOT, Cpp_Bus_Driver::Tool::Pin_Mode::INPUT, Cpp_Bus_Driver::Tool::Pin_Status::PULLUP);
+bool RmtInit() {
+  printf("create rmt rx channel\n");
+  rmt_rx_channel_config_t rx_channel_cfg = {
+      .gpio_num =
+          static_cast<gpio_num_t>(t_display_p4_air_example::gpio::infrared::kRx),
+      .clk_src = RMT_CLK_SRC_DEFAULT,
+      .resolution_hz =
+          t_display_p4_air_example::device::infrared::kResolutionHz,
+      .mem_block_symbols = 64,
+  };
+  esp_err_t result = rmt_new_rx_channel(&rx_channel_cfg, &g_rx_channel);
+  if (result != ESP_OK) {
+    printf("rmt_new_rx_channel failed (error code: %#X)\n", result);
+    return false;
+  }
 
-    Axp517->begin();
-    Xl9535->begin();
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+  g_receive_queue = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
+  if (g_receive_queue == nullptr) {
+    printf("create receive queue failed\n");
+    return false;
+  }
 
-    Rmt_Init();
+  rmt_rx_event_callbacks_t cbs = {
+      .on_recv_done = RmtRxDoneCallback,
+  };
+  result = rmt_rx_register_event_callbacks(
+      g_rx_channel, &cbs, g_receive_queue);
+  if (result != ESP_OK) {
+    printf("rmt_rx_register_event_callbacks failed (error code: %#X)\n",
+        result);
+    return false;
+  }
 
-    rmt_rx_done_event_data_t rx_data;
+  printf("create rmt tx channel\n");
+  rmt_tx_channel_config_t tx_channel_cfg = {
+      .gpio_num =
+          static_cast<gpio_num_t>(t_display_p4_air_example::gpio::infrared::kTx),
+      .clk_src = RMT_CLK_SRC_DEFAULT,
+      .resolution_hz =
+          t_display_p4_air_example::device::infrared::kResolutionHz,
+      .mem_block_symbols = 64,
+      .trans_queue_depth = 4,
+  };
+  result = rmt_new_tx_channel(&tx_channel_cfg, &g_tx_channel);
+  if (result != ESP_OK) {
+    printf("rmt_new_tx_channel failed (error code: %#X)\n", result);
+    return false;
+  }
 
-    while (1)
-    {
-        if (xQueueReceive(receive_queue, &rx_data, pdMS_TO_TICKS(10)) == pdPASS)
-        {
-            // 收到红外信号，解析并打印
-            parse_nec_frame(rx_data.received_symbols, rx_data.num_symbols);
+  rmt_carrier_config_t carrier_cfg = {
+      .frequency_hz = 38000,
+      .duty_cycle = 0.33f,
+  };
+  result = rmt_apply_carrier(g_tx_channel, &carrier_cfg);
+  if (result != ESP_OK) {
+    printf("rmt_apply_carrier failed (error code: %#X)\n", result);
+    return false;
+  }
 
-            rmt_receive_config_t receive_config =
-                {
-                    .signal_range_min_ns = 1250,
-                    .signal_range_max_ns = 12000000,
-                };
+  ir_nec_encoder_config_t nec_encoder_cfg = {
+      .resolution = t_display_p4_air_example::device::infrared::kResolutionHz,
+  };
+  result = rmt_new_ir_nec_encoder(&nec_encoder_cfg, &g_nec_encoder);
+  if (result != ESP_OK) {
+    printf("rmt_new_ir_nec_encoder failed (error code: %#X)\n", result);
+    return false;
+  }
 
-            // 重新启动接收
-            ESP_ERROR_CHECK(rmt_receive(rx_channel, raw_symbols, sizeof(raw_symbols), &receive_config));
-        }
+  result = rmt_enable(g_tx_channel);
+  if (result != ESP_OK) {
+    printf("rmt tx enable failed (error code: %#X)\n", result);
+    return false;
+  }
+  result = rmt_enable(g_rx_channel);
+  if (result != ESP_OK) {
+    printf("rmt rx enable failed (error code: %#X)\n", result);
+    return false;
+  }
 
-        if (Esp32p4->pin_read(ESP32P4_BOOT) == 0)
-        {
-            vTaskDelay(pdMS_TO_TICKS(300));
+  return StartReceive();
+}
 
-            printf("rmt send start\n");
+}  // namespace
 
-            const ir_nec_scan_code_t test_code =
-                {
-                    .address = 0x0440,
-                    .command = 0x3003,
-                };
-            rmt_transmit_config_t transmit_config =
-                {
-                    .loop_count = 0, // no loop
-                };
-            ESP_ERROR_CHECK(rmt_transmit(tx_channel, nec_encoder, &test_code, sizeof(test_code), &transmit_config));
-        }
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+  t_display_p4_air_example::InitDriver();
+
+  cpp_bus_driver::Tool tool;
+  tool.SetGpioMode(t_display_p4_air_example::gpio::kChipBoot,
+      cpp_bus_driver::Tool::GpioMode::kInput,
+      cpp_bus_driver::Tool::GpioStatus::kPullup);
+
+  if (!RmtInit()) {
+    printf("RmtInit failed\n");
+  }
+
+  rmt_rx_done_event_data_t rx_data = {};
+  while (1) {
+    if (xQueueReceive(g_receive_queue, &rx_data, pdMS_TO_TICKS(10)) ==
+        pdPASS) {
+      ParseNecFrame(rx_data.received_symbols, rx_data.num_symbols);
+      StartReceive();
     }
+
+    if (!tool.GpioRead(t_display_p4_air_example::gpio::kChipBoot)) {
+      vTaskDelay(pdMS_TO_TICKS(300));
+
+      printf("rmt send start\n");
+      const ir_nec_scan_code_t test_code = {
+          .address = 0x0440,
+          .command = 0x3003,
+      };
+      rmt_transmit_config_t transmit_config = {
+          .loop_count = 0,
+      };
+      esp_err_t result = rmt_transmit(g_tx_channel, g_nec_encoder, &test_code,
+          sizeof(test_code), &transmit_config);
+      if (result != ESP_OK) {
+        printf("rmt_transmit failed (error code: %#X)\n", result);
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }

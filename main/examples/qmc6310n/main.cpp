@@ -1,98 +1,70 @@
 /*
- * @Description: None
+ * @Description: qmc6310n
  * @Author: LILYGO_L
  * @Date: 2026-02-27 09:48:55
- * @LastEditTime: 2026-03-12 17:20:48
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
+
+#include <memory>
+
 #include "SensorQMC6310.hpp"
-#include <math.h>
 
-float Mag_Data[3] = {0.0f, 0.0f, 0.0f}; // x, y, z (单位 μT)
+float g_mag_data[3] = {0.0f, 0.0f, 0.0f};  // x, y, z，单位 uT
+bool g_mag_data_ready_flag = false;
+int64_t g_cycle_time_ms = 0;
 
-bool Mag_Data_Ready_Flag = false;
+auto g_qmc6310n = std::make_unique<SensorQMC6310>();
 
-size_t Cycle_Time = 0;
+bool InitQmc6310n(void) {
+  printf("InitQmc6310n\n");
 
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
+  Wire.set_freq(1000000);
+  if (!g_qmc6310n->begin(Wire,
+          t_display_p4_air_example::device::qmc6310n::kI2cAddress,
+          t_display_p4_air_example::gpio::qmc6310n::kSda,
+          t_display_p4_air_example::gpio::qmc6310n::kScl)) {
+    printf("Qmc6310n begin failed\n");
+    return false;
+  }
 
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
+  printf("Qmc6310n device id: %#X\n", g_qmc6310n->getChipID());
+  g_qmc6310n->configMagnetometer(SensorQMC6310::MODE_CONTINUOUS,
+      SensorQMC6310::RANGE_8G, SensorQMC6310::DATARATE_200HZ,
+      SensorQMC6310::OSR_1, SensorQMC6310::DSR_1);
 
-auto Qmc6310n = std::make_unique<SensorQMC6310>();
-
-auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
-
-bool Qmc6310n_Init(void)
-{
-    printf("Qmc6310n_Init\n");
-
-    Wire1.set_freq(1000000);
-    if (Qmc6310n->begin(Wire1, QMC6310N_IIC_ADDRESS, QMC6310N_SDA, QMC6310N_SCL) == false)
-    {
-        printf("qmc6310n fail\n");
-
-        return false;
-    }
-
-    printf("qmc6310n device id: %#X\n", Qmc6310n->getChipID());
-
-    Qmc6310n->configMagnetometer(
-        SensorQMC6310::MODE_CONTINUOUS, // 连续模式
-        SensorQMC6310::RANGE_8G,
-        SensorQMC6310::DATARATE_200HZ,
-        SensorQMC6310::OSR_1,
-        SensorQMC6310::DSR_1);
-
-    printf("Qmc6310n_Init success\n");
-
-    return true;
+  printf("InitQmc6310n success\n");
+  return true;
 }
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-    Axp517->begin();
+  auto& driver = t_display_p4_air_example::InitDriver();
+  Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
+  InitQmc6310n();
 
-    Xl9535->begin();
-
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-
-    Wire1._bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
-
-    Qmc6310n_Init();
-
-    while (1)
-    {
-        if (Qmc6310n->isDataReady())
-        {
-            Qmc6310n->readData();
-
-            Mag_Data[0] = Qmc6310n->getX(); // μT
-            Mag_Data[1] = Qmc6310n->getY();
-            Mag_Data[2] = Qmc6310n->getZ();
-
-            Mag_Data_Ready_Flag = true;
-        }
-
-        if (ESP32P4->get_system_time_ms() > Cycle_Time)
-        {
-            if (Mag_Data_Ready_Flag)
-            {
-                printf("Mag:  X: %8.2f  Y: %8.2f  Z: %8.2f   μT\n",
-                       Mag_Data[0], Mag_Data[1], Mag_Data[2]);
-
-                Mag_Data_Ready_Flag = false;
-            }
-
-            Cycle_Time = ESP32P4->get_system_time_ms() + 1000; // 每秒印一次
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(10));
+  while (1) {
+    if (g_qmc6310n->isDataReady()) {
+      g_qmc6310n->readData();
+      g_mag_data[0] = g_qmc6310n->getX();
+      g_mag_data[1] = g_qmc6310n->getY();
+      g_mag_data[2] = g_qmc6310n->getZ();
+      g_mag_data_ready_flag = true;
     }
+
+    const int64_t now_ms = esp_timer_get_time() / 1000;
+    if (now_ms > g_cycle_time_ms) {
+      if (g_mag_data_ready_flag) {
+        printf("Mag: X: %8.2f  Y: %8.2f  Z: %8.2f uT\n", g_mag_data[0],
+            g_mag_data[1], g_mag_data[2]);
+        g_mag_data_ready_flag = false;
+      }
+
+      g_cycle_time_ms = now_ms + 1000;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }

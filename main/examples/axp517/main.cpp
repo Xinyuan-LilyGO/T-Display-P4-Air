@@ -1,156 +1,108 @@
 /*
- * @Description: None
+ * @Description: axp517
  * @Author: LILYGO_L
- * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-03-12 17:19:35
+ * @Date: 2026-02-04 17:03:13
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
 
-auto Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Iic_Bus, AXP517_IIC_ADDRESS);
-
-void print_axp517_status()
-{
-    printf("---------- axp517 ----------\n");
-
-    // device info
-    printf("device id: %#X\n", Axp517->get_device_id());
-
-    // chip status 0 (flags)
-    Cpp_Bus_Driver::Axp517::Chip_Status_0 status0;
-    if (Axp517->get_chip_status_0(status0))
-    {
-        printf("chip status 0:\n");
-        printf("  vbus good: %d\n", status0.vbus_good_indication);
-        printf("  battery present: %d\n", status0.battery_present_status);
-        printf("  battery active mode: %d\n", status0.battery_in_active_mode);
-        printf("  batfet status: %d\n", status0.batfet_status);
-        printf("  current limit status: %d\n", status0.current_limit_status);
-        printf("  thermal regulation status: %d\n", status0.thermal_regulation_status);
-    }
-
-    // chip status 1 (charge & direction)
-    Cpp_Bus_Driver::Axp517::Chip_Status_1 status1;
-    if (Axp517->get_chip_status_1(status1))
-    {
-        printf("chip status 1:\n");
-
-        printf("  charge status: ");
-        switch (status1.charging_status)
-        {
-        case Cpp_Bus_Driver::Axp517::Charge_Status::TRICKLE_CHARGE:
-            printf("trickle charge\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Charge_Status::PRECHARGE:
-            printf("pre-charge\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Charge_Status::CONSTANT_CURRENT:
-            printf("constant current\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Charge_Status::CONSTANT_VOLTAGE:
-            printf("constant voltage\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Charge_Status::CHARGE_DONE:
-            printf("charge done\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Charge_Status::NOT_CHARGING:
-            printf("not charging\n");
-            break;
-        default:
-            printf("unknown\n");
-            break;
-        }
-
-        printf("  battery current direction: ");
-        switch (status1.battery_current_direction)
-        {
-        case Cpp_Bus_Driver::Axp517::Battery_Current_Direction::STANDBY:
-            printf("standby\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Battery_Current_Direction::CHARGE:
-            printf("charging\n");
-            break;
-        case Cpp_Bus_Driver::Axp517::Battery_Current_Direction::DISCHARGE:
-            printf("discharging\n");
-            break;
-        default:
-            printf("unknown\n");
-            break;
-        }
-        printf("  vindpm status: %d\n", status1.vindpm_status);
-
-        printf("  system status indication: %d\n", status1.system_status_indication);
-    }
-
-    // battery & measurement
-    printf("measurements:\n");
-    printf("  battery level: %d %%\n", Axp517->get_battery_level());
-    printf("  battery health: %d %%\n", Axp517->get_battery_health());
-    printf("  battery temperature: %d ^C\n", Axp517->get_battery_temperature_celsius());
-    printf("  vbus voltage: %u mv\n", Axp517->get_vbus_voltage());
-    printf("  vbus current: %u ma\n", Axp517->get_vbus_current());
-    printf("  ts voltage: %f\n", Axp517->get_ts_voltage());
-    printf("  battery voltage: %u mv\n", Axp517->get_battery_voltage());
-    printf("  battery current: %f ma\n", Axp517->get_battery_current());
-
-    // data select items
-    Axp517->set_adc_data_select(Cpp_Bus_Driver::Axp517::Adc_Data::SYSTEM_VOLTAGE);
-    printf("  system voltage: %u mv\n", Axp517->get_system_voltage());
-
-    Axp517->set_adc_data_select(Cpp_Bus_Driver::Axp517::Adc_Data::CHIP_TEMPERATURE_CELSIUS);
-    printf("  chip die junction temperature: %f ^C\n", Axp517->get_chip_die_junction_temperature_celsius());
-
-    Axp517->set_adc_data_select(Cpp_Bus_Driver::Axp517::Adc_Data::CHARGING_CURRENT);
-    printf("  charging current: %f ma\n", Axp517->get_charging_current());
-
-    Axp517->set_adc_data_select(Cpp_Bus_Driver::Axp517::Adc_Data::DISCHARGE_CURRENT);
-    printf("  discharging current: %f ma\n", Axp517->get_discharging_current());
-
-    printf("\n");
+const char* ChargeStatusName(cpp_bus_driver::Axp517::ChargeStatus status) {
+  switch (status) {
+    case cpp_bus_driver::Axp517::ChargeStatus::kTrickleCharge:
+      return "trickle charge";
+    case cpp_bus_driver::Axp517::ChargeStatus::kPrecharge:
+      return "precharge";
+    case cpp_bus_driver::Axp517::ChargeStatus::kConstantCurrent:
+      return "constant current";
+    case cpp_bus_driver::Axp517::ChargeStatus::kConstantVoltage:
+      return "constant voltage";
+    case cpp_bus_driver::Axp517::ChargeStatus::kChargeDone:
+      return "charge done";
+    case cpp_bus_driver::Axp517::ChargeStatus::kNotCharging:
+      return "not charging";
+    default:
+      return "invalid";
+  }
 }
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+const char* BatteryCurrentDirectionName(
+    cpp_bus_driver::Axp517::BatteryCurrentDirection direction) {
+  switch (direction) {
+    case cpp_bus_driver::Axp517::BatteryCurrentDirection::kStandby:
+      return "standby";
+    case cpp_bus_driver::Axp517::BatteryCurrentDirection::kCharge:
+      return "charge";
+    case cpp_bus_driver::Axp517::BatteryCurrentDirection::kDischarge:
+      return "discharge";
+    default:
+      return "invalid";
+  }
+}
 
-    Axp517->begin();
+void PrintPowerInfo(cpp_bus_driver::Axp517& axp517) {
+  printf("device id: %#X\n", axp517.GetDeviceId());
 
-    // 开启所有 ADC 通道以确保数据可读
-    Cpp_Bus_Driver::Axp517::Adc_Channel adc_cfg =
-        {
-            .vbus_current_measure = true,
-            .battery_discharge_current_measure = true,
-            .battery_charge_current_measure = true,
-            .chip_temperature_measure = true,
-            .system_voltage_measure = true,
-            .vbus_voltage_measure = true,
-            .ts_value_measure = true,
-            .battery_voltage_measure = true,
-        };
+  cpp_bus_driver::Axp517::ChipStatus0 status0;
+  if (axp517.GetChipStatus0(status0)) {
+    printf("  battery present: %d\n", status0.battery_present_status);
+    printf("  vbus good: %d\n", status0.vbus_good_indication);
+    printf("  thermal regulation: %d\n", status0.thermal_regulation_status);
+  }
 
-    Axp517->set_adc_channel(adc_cfg);
+  cpp_bus_driver::Axp517::ChipStatus1 status1;
+  if (axp517.GetChipStatus1(status1)) {
+    printf("  charging status: %s\n",
+        ChargeStatusName(status1.charging_status));
+    printf("  battery current direction: %s\n",
+        BatteryCurrentDirectionName(status1.battery_current_direction));
+  }
 
-    // Axp517->set_charge_enable(false);
-    // Axp517->set_charge_current(256);
+  printf("  battery level: %u %%\n", axp517.GetBatteryLevel());
+  printf("  battery health: %u %%\n", axp517.GetBatteryHealth());
+  printf("  battery temperature: %d C\n",
+      axp517.GetBatteryTemperatureCelsius());
+  printf("  vbus voltage: %u mv\n", axp517.GetVbusVoltage());
+  printf("  vbus current: %u ma\n", axp517.GetVbusCurrent());
+  printf("  ts voltage: %.2f mv\n", axp517.GetTsVoltage());
+  printf("  battery voltage: %u mv\n", axp517.GetBatteryVoltage());
+  printf("  battery current: %.2f ma\n", axp517.GetBatteryCurrent());
 
-    // Axp517->set_gpio_source(Cpp_Bus_Driver::Axp517::Gpio_Source::BY_REG);
-    // Axp517->set_gpio_mode(Cpp_Bus_Driver::Axp517::Gpio_Mode::OUTPUT);
-    // Axp517->gpio_write(Cpp_Bus_Driver::Axp517::Gpio_Status::HIGH);
+  axp517.SetAdcDataSelect(cpp_bus_driver::Axp517::AdcData::kSystemVoltage);
+  printf("  system voltage: %u mv\n", axp517.GetSystemVoltage());
 
-    // Axp517->set_boost_enable(true);
-    // Axp517->set_force_rbfet_enable(true);
+  axp517.SetAdcDataSelect(
+      cpp_bus_driver::Axp517::AdcData::kChipTemperatureCelsius);
+  printf("  chip die junction temperature: %.2f C\n",
+      axp517.GetChipDieJunctionTemperatureCelsius());
 
-    // vTaskDelay(pdMS_TO_TICKS(5000));
-    // Axp517->set_force_batfet_mode(Cpp_Bus_Driver::Axp517::Force_Batfet::OFF);
+  axp517.SetAdcDataSelect(cpp_bus_driver::Axp517::AdcData::kChargingCurrent);
+  printf("  charging current: %.2f ma\n", axp517.GetChargingCurrent());
 
-    // vTaskDelay(pdMS_TO_TICKS(5000));
-    // Axp517->set_shipping_mode_enable(true);
+  axp517.SetAdcDataSelect(cpp_bus_driver::Axp517::AdcData::kDischargeCurrent);
+  printf("  discharging current: %.2f ma\n", axp517.GetDischargingCurrent());
+}
 
-    while (1)
-    {
-        print_axp517_status();
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
+
+  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& axp517 = driver.chip().axp517;
+
+  cpp_bus_driver::Axp517::AdcChannel adc_channel = {
+      .vbus_current_measure = true,
+      .battery_discharge_current_measure = true,
+      .battery_charge_current_measure = true,
+      .chip_temperature_measure = true,
+      .system_voltage_measure = true,
+      .vbus_voltage_measure = true,
+      .ts_value_measure = true,
+      .battery_voltage_measure = true,
+  };
+  axp517->SetAdcChannel(adc_channel);
+
+  while (1) {
+    PrintPowerInfo(*axp517);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 }

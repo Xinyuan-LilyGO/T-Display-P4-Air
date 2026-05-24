@@ -1,90 +1,62 @@
 /*
- * @Description: None
+ * @Description: aw86224
  * @Author: LILYGO_L
  * @Date: 2026-02-04 17:12:29
- * @LastEditTime: 2026-03-12 17:19:29
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
 
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
-auto Aw86224_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AW86224_SDA, AW86224_SCL, I2C_NUM_1);
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
-auto Aw86224 = std::make_unique<Cpp_Bus_Driver::Aw862xx>(Aw86224_Iic_Bus, AW86224_IIC_ADDRESS);
+  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& aw86224 = driver.chip().aw86224;
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+  using Aw862xx = cpp_bus_driver::Aw862xx;
+  static constexpr uint8_t kGainLevels[] = {
+      16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
+  static constexpr uint8_t kLoopCount = 15;
+  static constexpr uint32_t kPlayMs = 220;
+  static constexpr uint32_t kStopMs = 180;
 
-    Axp517->begin();
-
-    Xl9535->begin();
-
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-
-    Aw86224_Iic_Bus->set_bus_handle(Xl9535_Iic_Bus->get_bus_handle());
-
-    Aw86224->begin(500000);
-    // printf("Aw86224 input voltage: %.06f V\n", Aw86224->get_input_voltage());
-
-    // 等待F0校准
-    while (1)
-    {
-        uint32_t f0_value = Aw86224->get_f0_detection();
-        printf("Aw86224 get f0 detection value: %ld\n", f0_value);
-
-        if (Aw86224->set_f0_calibrate(f0_value) == true)
-        {
-            break;
-        }
+  while (1) {
+    Aw862xx::RamWaveformSelection selection;
+    while (!aw86224->InitRamModeByF0(selection)) {
+      printf("Aw86224 auto RAM waveform selection failed\n");
+      vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
-    // Aw86224->set_waveform_data_sample_rate(Cpp_Bus_Driver::Aw862xx::Sample_Rate::RATE_12KHZ);
-
-    // RAM播放
-    Aw86224->init_ram_mode(Cpp_Bus_Driver::aw862xx_haptic_ram_12k_0809_170, sizeof(Cpp_Bus_Driver::aw862xx_haptic_ram_12k_0809_170));
-
-    while (1)
-    {
-        // Iic_Scan();
-        // printf("Aw86224 input voltage: %.06f V\n", Aw86224->get_input_voltage());
-
-        // // RTP播放
-        //  Cpp_Bus_Driver::Aw862xx::System_Status ss;
-        //  if (Aw86224->get_system_status(ss) == true)
-        //  {
-        //      if (ss.rtp_fifo_full == false)
-        //      {
-        //          Aw86224->run_rtp_playback_waveform(Cpp_Bus_Driver::haptic_waveform_ordinary, sizeof(Cpp_Bus_Driver::haptic_waveform_ordinary));
-        //          printf("Aw86224 rtp_playback_waveform \n");
-
-        //         vTaskDelay(pdMS_TO_TICKS(100));
-        //     }
-        // }
-        // vTaskDelay(pdMS_TO_TICKS(10));
-
-        // RAM播放
-        Aw86224->run_ram_playback_waveform(1, 15, 255);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        Aw86224->stop_ram_playback_waveform();
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        Aw86224->run_ram_playback_waveform(2, 14, 255);
-        vTaskDelay(pdMS_TO_TICKS(30));
-        Aw86224->run_ram_playback_waveform(2, 14, 255);
-        vTaskDelay(pdMS_TO_TICKS(30));
-
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        Aw86224->run_ram_playback_waveform(1, 14, 255);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        vTaskDelay(pdMS_TO_TICKS(1000));
+    const auto& info = selection.info;
+    printf(
+        "Aw86224 auto selected library: %s, sequences: %u, rated f0: %uHz, "
+        "detected f0: %u.%uHz\n",
+        info.name, static_cast<unsigned int>(info.waveform_count),
+        static_cast<unsigned int>(info.rated_f0_hz),
+        static_cast<unsigned int>(selection.detected_f0_0p1_hz / 10),
+        static_cast<unsigned int>(selection.detected_f0_0p1_hz % 10));
+    printf("Aw86224 gain test levels:");
+    for (uint8_t gain : kGainLevels) {
+      printf(" %u", static_cast<unsigned int>(gain));
     }
+    printf("\n");
+
+    printf("Aw86224 GetInputVoltage: %.06f v\n", aw86224->GetInputVoltage());
+
+    for (uint8_t gain : kGainLevels) {
+      printf("Aw86224 gain level: %u\n", static_cast<unsigned int>(gain));
+
+      for (uint8_t sequence = 1; sequence <= info.waveform_count; sequence++) {
+        printf("Play %s sequence %u gain %u\n", info.name,
+            static_cast<unsigned int>(sequence),
+            static_cast<unsigned int>(gain));
+        aw86224->PlayRamWaveform(sequence, kLoopCount, gain);
+        vTaskDelay(pdMS_TO_TICKS(kPlayMs));
+        aw86224->StopRamPlaybackWaveform();
+        vTaskDelay(pdMS_TO_TICKS(kStopMs));
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(1500));
+  }
 }

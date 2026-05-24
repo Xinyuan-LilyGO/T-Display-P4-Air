@@ -1,56 +1,34 @@
 /*
- * @Description: None
+ * @Description: sgm38121
  * @Author: LILYGO_L
  * @Date: 2026-02-27 17:50:32
- * @LastEditTime: 2026-03-12 17:21:18
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
 
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
-auto Sgm38121_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(SGM38121_SDA, SGM38121_SCL, I2C_NUM_1);
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
-auto Sgm38121 = std::make_unique<Cpp_Bus_Driver::Sgm38121>(Sgm38121_Iic_Bus, SGM38121_IIC_ADDRESS);
-auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
+  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& sgm38121 = driver.chip().sgm38121;
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+  sgm38121->SetOutputVoltage(
+      cpp_bus_driver::Sgm38121::Channel::kAvdd1, 1800);
+  sgm38121->SetOutputVoltage(
+      cpp_bus_driver::Sgm38121::Channel::kAvdd2, 2800);
 
-    Axp517->begin();
+  while (1) {
+    sgm38121->SetChannelStatus(cpp_bus_driver::Sgm38121::Channel::kAvdd1,
+        cpp_bus_driver::Sgm38121::Status::kOn);
+    sgm38121->SetChannelStatus(cpp_bus_driver::Sgm38121::Channel::kAvdd2,
+        cpp_bus_driver::Sgm38121::Status::kOn);
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
-    Xl9535->begin();
-
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-
-    Sgm38121_Iic_Bus->set_bus_handle(Axp517_Iic_Bus->get_bus_handle());
-    Sgm38121->begin();
-
-    Sgm38121->set_output_voltage(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_1, 1800);
-    Sgm38121->set_output_voltage(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_2, 2800);
-
-    // Sgm38121->set_output_voltage(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_1, 1000);
-    // Sgm38121->set_output_voltage(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_2, 1000);
-
-    while (1)
-    {
-        Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_1, Cpp_Bus_Driver::Sgm38121::Status::ON);
-        Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_2, Cpp_Bus_Driver::Sgm38121::Status::ON);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-        Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_1, Cpp_Bus_Driver::Sgm38121::Status::OFF);
-        Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::AVDD_2, Cpp_Bus_Driver::Sgm38121::Status::OFF);
-        vTaskDelay(pdMS_TO_TICKS(1000));
-
-        // Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_1, Cpp_Bus_Driver::Sgm38121::Status::ON);
-        // Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_2, Cpp_Bus_Driver::Sgm38121::Status::ON);
-        // vTaskDelay(pdMS_TO_TICKS(1000));
-        // Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_1, Cpp_Bus_Driver::Sgm38121::Status::OFF);
-        // Sgm38121->set_channel_status(Cpp_Bus_Driver::Sgm38121::Channel::DVDD_2, Cpp_Bus_Driver::Sgm38121::Status::OFF);
-        // vTaskDelay(pdMS_TO_TICKS(1000));
-    }
+    sgm38121->SetChannelStatus(cpp_bus_driver::Sgm38121::Channel::kAvdd1,
+        cpp_bus_driver::Sgm38121::Status::kOff);
+    sgm38121->SetChannelStatus(cpp_bus_driver::Sgm38121::Channel::kAvdd2,
+        cpp_bus_driver::Sgm38121::Status::kOff);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
 }

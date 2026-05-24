@@ -5,8 +5,7 @@
  * @LastEditTime: 2026-03-12 17:20:33
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
+#include "../common/esp_hosted_example.h"
 
 #include <errno.h>
 #include <string.h>
@@ -38,12 +37,6 @@ extern int wifi_cmd_clr_rx_statistics(int argc, char **argv);
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
 #include "esp_extconn.h"
 #endif
-
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
-
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
 
 void iperf_hook_show_wifi_stats(iperf_traffic_type_t type, iperf_status_t status)
 {
@@ -84,26 +77,8 @@ extern "C" void app_main(void)
 {
     printf("Ciallo\n");
 
-    Axp517->begin();
-
-    Xl9535->begin();
-
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-
-    Xl9535->pin_mode(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-
-    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9535->pin_write(XL9535_ESP32C5_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
-
-    // Xl9535->pin_mode(XL9535_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-
-    // Xl9535->pin_write(XL9535_ESP32P4_ESP32C5_UART_SWITCH, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+    auto& driver = t_display_p4_air_example::InitDriver();
+    t_display_p4_air_example::esp_hosted::ResetEsp32c5(driver);
 
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
     esp_extconn_config_t ext_config = ESP_EXTCONN_CONFIG_DEFAULT();

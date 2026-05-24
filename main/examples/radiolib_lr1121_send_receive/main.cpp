@@ -1,130 +1,86 @@
 /*
- * @Description: None
+ * @Description: radiolib_lr1121_send_receive
  * @Author: LILYGO_L
  * @Date: 2026-02-28 16:21:31
- * @LastEditTime: 2026-04-24 16:15:02
+ * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
-#include "cpp_bus_driver_library.h"
-#include "radiolib_cpp_bus_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
 
-uint8_t Send_Package[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+#include <memory>
 
-bool Lr1121_Irq_flag = false;
+uint8_t g_send_package[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+volatile bool g_lr1121_irq_flag = false;
 
-auto Axp517_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(AXP517_SDA, AXP517_SCL, I2C_NUM_0);
-auto Xl9535_Iic_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Iic_1>(XL9535_SDA, XL9535_SCL, I2C_NUM_1);
+extern "C" void app_main(void) {
+  printf("Ciallo\n");
 
-auto LR1121_Spi_Bus = std::make_shared<Cpp_Bus_Driver::Hardware_Spi>(LR1121_MOSI, LR1121_SCLK, LR1121_MISO, SPI2_HOST, 0);
+  auto& driver = t_display_p4_air_example::InitDriver();
+  auto esp32p4 = std::make_unique<cpp_bus_driver::Tool>();
 
-auto Axp517 = std::make_unique<Cpp_Bus_Driver::Axp517>(Axp517_Iic_Bus, AXP517_IIC_ADDRESS);
-auto Xl9535 = std::make_unique<Cpp_Bus_Driver::Xl95x5>(Xl9535_Iic_Bus, XL9535_IIC_ADDRESS);
+  esp32p4->SetGpioMode(t_display_p4_air_example::gpio::kChipBoot,
+      cpp_bus_driver::Tool::GpioMode::kInput,
+      cpp_bus_driver::Tool::GpioStatus::kPullup);
 
-RadioLibHal *Radiolib_Hal = new Radiolib_Cpp_Bus_Driver_Hal(LR1121_Spi_Bus, 10000000, LR1121_CS);
-LR1121 Lr1121 = new Module(Radiolib_Hal, static_cast<uint32_t>(RADIOLIB_NC), LR1121_INT, LR1121_RST, LR1121_BUSY);
+  if (!driver.InitLr1121()) {
+    printf("InitLr1121 failed\n");
+    return;
+  }
+  auto* lr1121 = driver.chip().lr1121;
 
-auto ESP32P4 = std::make_unique<Cpp_Bus_Driver::Tool>();
+  const uint32_t rf_switch_dio_pins[] = {
+      RADIOLIB_LR11X0_DIO5, RADIOLIB_LR11X0_DIO6, RADIOLIB_NC, RADIOLIB_NC,
+      RADIOLIB_NC,
+  };
 
-extern "C" void app_main(void)
-{
-    printf("Ciallo\n");
+  const Module::RfSwitchMode_t rf_switch_table[] = {
+      {LR11x0::MODE_STBY, {0, 0}},
+      {LR11x0::MODE_RX, {0, 1}},
+      {LR11x0::MODE_TX, {0, 0}},
+      {LR11x0::MODE_TX_HP, {1, 0}},
+      {LR11x0::MODE_TX_HF, {0, 0}},
+      {LR11x0::MODE_GNSS, {0, 0}},
+      {LR11x0::MODE_WIFI, {0, 0}},
+      END_OF_MODE_TABLE,
+  };
 
-    Axp517->begin();
+  lr1121->setRfSwitchTable(rf_switch_dio_pins, rf_switch_table);
+  lr1121->setIrqAction([]() { g_lr1121_irq_flag = true; });
+  lr1121->startReceive();
 
-    Xl9535->begin();
-    Xl9535->pin_mode(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9535->pin_write(XL9535_3_3_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
+  while (1) {
+    if (!esp32p4->GpioRead(t_display_p4_air_example::gpio::kChipBoot)) {
+      vTaskDelay(pdMS_TO_TICKS(300));
 
-    Xl9535->pin_mode(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    Xl9535->pin_write(XL9535_LR1121_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
+      printf("Lr1121 send package\n");
+      int16_t status = lr1121->transmit(g_send_package, sizeof(g_send_package));
+      if (status != RADIOLIB_ERR_NONE) {
+        printf("transmit failed (error code: %d)\n", status);
+      }
 
-    ESP32P4->pin_mode(ESP32P4_BOOT, Cpp_Bus_Driver::Tool::Pin_Mode::INPUT);
+      status = lr1121->startReceive();
+      if (status != RADIOLIB_ERR_NONE) {
+        printf("startReceive failed (error code: %d)\n", status);
+      }
 
-    // int16_t status = Lr1121.begin(915.0, 125.0, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 22, 8);
-    int16_t status = Lr1121.begin(2450.0, 406.25, 12, 7, RADIOLIB_LR11X0_LORA_SYNC_WORD_PRIVATE, 13, 8);
-    // int16_t status = Lr1121.beginFSK(850.0, 200.0, 10, 467.0, 22, 16);
-    if (status == RADIOLIB_ERR_NONE)
-    {
-        printf("lr1121 init success\n");
+      g_lr1121_irq_flag = false;
     }
-    else
-    {
-        printf("lr1121 init fail (error code: %d)\n", status);
-    }
 
-    const uint32_t rfswitch_dio_pins[] =
-        {
-            RADIOLIB_LR11X0_DIO5, RADIOLIB_LR11X0_DIO6,
-            RADIOLIB_NC, RADIOLIB_NC, RADIOLIB_NC};
+    if (g_lr1121_irq_flag) {
+      uint8_t receive_package[255] = {};
+      if (lr1121->readData(receive_package, sizeof(g_send_package)) ==
+          RADIOLIB_ERR_NONE) {
+        printf("Lr1121 rssi: %.2f dbm, snr: %.2f db\n", lr1121->getRSSI(),
+            lr1121->getSNR());
 
-    const Module::RfSwitchMode_t rfswitch_table[] =
-        {
-            // mode                  DIO5  DIO6
-            {LR11x0::MODE_STBY, {0, 0}},
-            {LR11x0::MODE_RX, {0, 1}},
-            {LR11x0::MODE_TX, {0, 0}},
-            {LR11x0::MODE_TX_HP, {1, 0}},
-            {LR11x0::MODE_TX_HF, {0, 0}},
-            {LR11x0::MODE_GNSS, {0, 0}},
-            {LR11x0::MODE_WIFI, {0, 0}},
-            END_OF_MODE_TABLE,
-        };
-
-    Lr1121.setRfSwitchTable(rfswitch_dio_pins, rfswitch_table);
-
-    Lr1121.setIrqAction(
-        []()
-        {
-            Lr1121_Irq_flag = true;
-        });
-
-    Lr1121.startReceive();
-
-    while (1)
-    {
-        if (ESP32P4->pin_read(ESP32P4_BOOT) == 0)
-        {
-            vTaskDelay(pdMS_TO_TICKS(300));
-
-            printf("lr1121 send package\n");
-
-            status = Lr1121.transmit(Send_Package, 9);
-            if (status != RADIOLIB_ERR_NONE)
-            {
-                printf("transmit fail (error code: %d)\n", status);
-            }
-
-            status = Lr1121.startReceive();
-            if (status != RADIOLIB_ERR_NONE)
-            {
-                printf("startReceive fail (error code: %d)\n", status);
-            }
-
-            Lr1121_Irq_flag = false;
+        for (uint8_t i = 0; i < sizeof(g_send_package); i++) {
+          printf("get Lr1121 data[%d]: %d\n", i, receive_package[i]);
         }
+      }
 
-        if (Lr1121_Irq_flag == true) // 接收完成中断
-        {
-            uint8_t receive_package[255] = {0};
-            if (Lr1121.readData(receive_package, 9) == RADIOLIB_ERR_NONE)
-            {
-                printf("lr1121 rssi: %.2f dbm, snr: %.2f db\n", Lr1121.getRSSI(), Lr1121.getSNR());
-
-                for (uint8_t i = 0; i < 9; i++)
-                {
-                    printf("get lr1121 data[%d]: %d\n", i, receive_package[i]);
-                }
-            }
-
-            Lr1121_Irq_flag = false;
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(10));
+      g_lr1121_irq_flag = false;
     }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }

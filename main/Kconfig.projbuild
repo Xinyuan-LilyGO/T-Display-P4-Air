@@ -1,13 +1,6 @@
 menu "Example Configuration"
 
     choice
-        prompt "Select the screen type"
-        default SCREEN_TYPE_HI8561
-            config SCREEN_TYPE_HI8561
-                bool "HI8561"
-    endchoice
-
-    choice
         prompt "Select the example to build"
         default EXAMPLE_BUILD_SCREEN_LVGL
             config EXAMPLE_BUILD_IIC_SCAN
@@ -15,7 +8,7 @@ menu "Example Configuration"
             config EXAMPLE_BUILD_SCREEN_LVGL
                 bool "screen_lvgl"
             config EXAMPLE_BUILD_XL9535
-                bool "xl9555"
+                bool "xl9535"
             config EXAMPLE_BUILD_AXP517
                 bool "axp517"
             config EXAMPLE_BUILD_AW86224
@@ -90,26 +83,5 @@ menu "Example Configuration"
             config CAMERA_PIXEL_FORMAT_RGB888
                 bool "RGB888"
     endchoice
-
-    config LV_DPI_DEF
-        string "Default Dots Per Inch (in px/inch)"
-        default "300"
-
-    config LV_DEF_REFR_PERIOD
-        string "Default refresh period (ms)"
-        default "30"
-
-    config LV_MEM_SIZE_KILOBYTES
-        string "Size of the memory used by `lv_malloc()` in kilobytes (>= 2kB)"
-        default "300"
-
-    config LV_FS_STDIO_LETTER
-        string "Set an upper cased letter on which the drive will accessible (e.g. 65 for 'A')"
-        default "65"
-
-    # 外部解码图片缓冲空间设置大小为：宽度 × 高度 × 4
-    config LV_CACHE_DEF_SIZE
-        string "Default image cache size. 0 to disable caching"
-        default "2522880"
 
 endmenu

@@ -24,12 +24,12 @@
  *
  */
 
+#include "ndef_t5t.h"
+#include "ndef_class.h"
 #include "nfc_utils.h"
 #include "rfal_nfc.h"
-#include "ndef_class.h"
-#include "ndef_t5t.h"
 #include "st25r3916_driver.h"
-#include "lilygo_device_driver_library.h"
+#include "../common/t_display_p4_air_example.h"
 
 /* Uncomment this line if you want to use the NFC reader with I2C bus instead of SPI */
 #define I2C_ENABLED
@@ -41,7 +41,7 @@
 #define LED_AP2P_PIN -1
 #define LED_FIELD_PIN -1
 
-#define USER_BTN ESP32P4_BOOT
+#define USER_BTN t_display_p4_air_example::gpio::kChipBoot
 
 /* Definition of possible states the demo state machine could have */
 #define DEMO_ST_NOTINIT 0         /*!< Demo State:  Not initialized */
@@ -146,9 +146,11 @@ int PushButtonState = 0;
 
 /* SPI, Component and NFC */
 #ifndef I2C_ENABLED
-RfalRfST25R3916Class rfst25r3916(&SPI, -1, ST25R3916_INT);
+RfalRfST25R3916Class rfst25r3916(
+    &SPI, -1, t_display_p4_air_example::gpio::st25r3916::kInt);
 #else
-RfalRfST25R3916Class rfst25r3916(&Wire, ST25R3916_INT);
+RfalRfST25R3916Class rfst25r3916(
+    &Wire, t_display_p4_air_example::gpio::st25r3916::kInt);
 #endif
 RfalNfcClass rfal_nfc(&rfst25r3916);
 NdefClass ndef(&rfal_nfc);
@@ -283,9 +285,12 @@ static void ndefShowDemoUsage()
 void St25r3916_Init(void)
 {
 #ifndef I2C_ENABLED
-    SPI.begin(ST25R3916_SPI_SCLK, ST25R3916_SPI_MISO, ST25R3916_SPI_MOSI, CS_PIN);
+    SPI.begin(t_display_p4_air_example::gpio::spi::kPort1Sclk,
+              t_display_p4_air_example::gpio::spi::kPort1Miso,
+              t_display_p4_air_example::gpio::spi::kPort1Mosi, -1);
 #else
-    Wire.begin(ST25R3916_SDA, ST25R3916_SCL);
+    Wire.begin(t_display_p4_air_example::gpio::st25r3916::kSda,
+               t_display_p4_air_example::gpio::st25r3916::kScl);
 #endif
 
     pinMode(LED_A_PIN, OUTPUT);
