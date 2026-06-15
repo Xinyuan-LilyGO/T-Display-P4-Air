@@ -18,7 +18,7 @@ extern "C" void app_main(void) {
   auto& driver = t_display_p4_air_example::InitDriver();
   auto esp32p4 = std::make_unique<cpp_bus_driver::Tool>();
 
-  esp32p4->SetGpioMode(t_display_p4_air_example::gpio::kChipBoot,
+  esp32p4->SetGpioMode(t_display_p4_air_example::gpio::button::kEsp32p4Boot,
       cpp_bus_driver::Tool::GpioMode::kInput,
       cpp_bus_driver::Tool::GpioStatus::kPullup);
 
@@ -49,7 +49,8 @@ extern "C" void app_main(void) {
   lr1121->startReceive();
 
   while (1) {
-    if (!esp32p4->GpioRead(t_display_p4_air_example::gpio::kChipBoot)) {
+    if (!esp32p4->GpioRead(
+            t_display_p4_air_example::gpio::button::kEsp32p4Boot)) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("Lr1121 send package\n");

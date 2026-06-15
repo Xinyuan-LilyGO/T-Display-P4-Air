@@ -58,14 +58,14 @@ inline i2s_data_bit_width_t BitsPerSample(int value) {
 
 inline bool InitBootKey() {
   static cpp_bus_driver::Tool tool;
-  return tool.SetGpioMode(gpio::kChipBoot,
+  return tool.SetGpioMode(gpio::button::kEsp32p4Boot,
       cpp_bus_driver::Tool::GpioMode::kInput,
       cpp_bus_driver::Tool::GpioStatus::kPullup);
 }
 
 inline bool BootKeyPressed() {
   static cpp_bus_driver::Tool tool;
-  return !tool.GpioRead(gpio::kChipBoot);
+  return !tool.GpioRead(gpio::button::kEsp32p4Boot);
 }
 
 inline int WriteReg(const audio_codec_ctrl_if_t* ctrl, int reg, int reg_len,

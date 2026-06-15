@@ -245,7 +245,7 @@ extern "C" void app_main(void) {
   t_display_p4_air_example::InitDriver();
 
   cpp_bus_driver::Tool tool;
-  tool.SetGpioMode(t_display_p4_air_example::gpio::kChipBoot,
+  tool.SetGpioMode(t_display_p4_air_example::gpio::button::kEsp32p4Boot,
       cpp_bus_driver::Tool::GpioMode::kInput,
       cpp_bus_driver::Tool::GpioStatus::kPullup);
 
@@ -261,7 +261,7 @@ extern "C" void app_main(void) {
       StartReceive();
     }
 
-    if (!tool.GpioRead(t_display_p4_air_example::gpio::kChipBoot)) {
+    if (!tool.GpioRead(t_display_p4_air_example::gpio::button::kEsp32p4Boot)) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("rmt send start\n");

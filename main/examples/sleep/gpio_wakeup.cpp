@@ -14,7 +14,8 @@ namespace {
 
 // 使用 BOOT 按键作为低电平唤醒源
 constexpr gpio_num_t kGpioWakeupNum =
-    static_cast<gpio_num_t>(t_display_p4_air_example::gpio::kChipBoot);
+    static_cast<gpio_num_t>(
+        t_display_p4_air_example::gpio::button::kEsp32p4Boot);
 constexpr int kGpioWakeupLevel = 0;
 
 static const char* TAG = "gpio_wakeup";

@@ -2,39 +2,50 @@
  * @Description: aw86224
  * @Author: LILYGO_L
  * @Date: 2026-02-04 17:12:29
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-15 15:41:48
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
+
+namespace {
+
+using Driver = lilygo_device_driver::TDisplayP4AirDriver;
+
+static constexpr uint8_t kGainLevels[] = {
+    16, 32, 48, 64, 80, 96, 112, 128,
+    144, 160, 176, 192, 208, 224, 240, 255};
+static constexpr uint8_t kLoopCount = 1;
+static constexpr uint32_t kPlayMs = 220;
+static constexpr uint32_t kStopMs = 180;
+static constexpr uint32_t kRetryDelayMs = 1000;
+static constexpr uint32_t kCycleDelayMs = 1500;
+
+}  // namespace
 
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
-  auto& aw86224 = driver.chip().aw86224;
+  auto& driver = Driver::GetInstance();
+  driver.Init(Driver::InitMode::kSync);
 
-  using Aw862xx = cpp_bus_driver::Aw862xx;
-  static constexpr uint8_t kGainLevels[] = {
-      16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
-  static constexpr uint8_t kLoopCount = 15;
-  static constexpr uint32_t kPlayMs = 220;
-  static constexpr uint32_t kStopMs = 180;
+  auto& aw86224 = driver.chip().aw86224;
+  if (aw86224 == nullptr || !driver.status().aw86224.init_flag) {
+    printf("Aw86224 init failed\n");
+    return;
+  }
 
   while (1) {
-    Aw862xx::RamWaveformSelection selection;
-    while (!aw86224->InitRamModeByF0(selection)) {
-      printf("Aw86224 auto RAM waveform selection failed\n");
-      vTaskDelay(pdMS_TO_TICKS(1000));
+    const auto& info = driver.status().aw86224.ram_waveform_info;
+    if (info.data == nullptr || info.waveform_count == 0) {
+      printf("Aw86224 RAM waveform init failed\n");
+      vTaskDelay(pdMS_TO_TICKS(kRetryDelayMs));
+      continue;
     }
 
-    const auto& info = selection.info;
     printf(
-        "Aw86224 auto selected library: %s, sequences: %u, rated f0: %uHz, "
-        "detected f0: %u.%uHz\n",
+        "Aw86224 selected library: %s, sequences: %u, rated f0: %uHz\n",
         info.name, static_cast<unsigned int>(info.waveform_count),
-        static_cast<unsigned int>(info.rated_f0_hz),
-        static_cast<unsigned int>(selection.detected_f0_0p1_hz / 10),
-        static_cast<unsigned int>(selection.detected_f0_0p1_hz % 10));
+        static_cast<unsigned int>(info.rated_f0_hz));
     printf("Aw86224 gain test levels:");
     for (uint8_t gain : kGainLevels) {
       printf(" %u", static_cast<unsigned int>(gain));
@@ -57,6 +68,6 @@ extern "C" void app_main(void) {
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1500));
+    vTaskDelay(pdMS_TO_TICKS(kCycleDelayMs));
   }
 }

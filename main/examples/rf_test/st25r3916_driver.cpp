@@ -41,7 +41,7 @@
 #define LED_AP2P_PIN -1
 #define LED_FIELD_PIN -1
 
-#define USER_BTN t_display_p4_air_example::gpio::kChipBoot
+#define USER_BTN t_display_p4_air_example::gpio::button::kEsp32p4Boot
 
 /* Definition of possible states the demo state machine could have */
 #define DEMO_ST_NOTINIT 0         /*!< Demo State:  Not initialized */
