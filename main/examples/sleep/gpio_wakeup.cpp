@@ -8,14 +8,14 @@
 #include "esp_check.h"
 #include "esp_sleep.h"
 #include "driver/gpio.h"
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 namespace {
 
-// 使用 BOOT 按键作为低电平唤醒源
+// Use BOOT as the low-level wakeup source.
 constexpr gpio_num_t kGpioWakeupNum =
     static_cast<gpio_num_t>(
-        t_display_p4_air_example::gpio::button::kEsp32p4Boot);
+        lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot);
 constexpr int kGpioWakeupLevel = 0;
 
 static const char* TAG = "gpio_wakeup";
@@ -52,7 +52,7 @@ esp_err_t example_register_gpio_wakeup(void) {
   ESP_RETURN_ON_ERROR(esp_sleep_enable_gpio_wakeup(), TAG,
                       "Configure gpio as wakeup source failed");
 
-  // 等待按键松开，避免配置完成后立即被再次唤醒
+  // Wait for the button to release before enabling wakeup.
   example_wait_gpio_inactive();
   ESP_LOGI(TAG, "gpio wakeup source is ready");
 

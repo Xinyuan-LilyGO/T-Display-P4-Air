@@ -1,5 +1,5 @@
 /*
- * @Description: MP3 decode example helpers
+ * @Description: MP3 decode driver helpers
  * @Author: LILYGO_L
  * @Date: 2026-05-24 16:30:00
  * @LastEditTime: 2026-05-24 16:30:00
@@ -16,21 +16,39 @@
 #include "esp_audio_dec.h"
 #include "esp_audio_dec_default.h"
 
-#include "es8388_example.h"
+#include "es8388_driver.h"
 
-namespace t_display_p4_air_example {
+namespace private_library {
 namespace mp3 {
 
+/**
+ * @brief 将 ID3v2 synchsafe 编码的 4 字节数据转换为整数。
+ * @param buffer 指向 4 字节 synchsafe 数据的缓冲区。
+ * @return 转换后的无符号整数。
+ */
 inline uint32_t SynchsafeToUint32(const uint8_t* buffer) {
   return ((buffer[0] & 0x7F) << 21) | ((buffer[1] & 0x7F) << 14) |
          ((buffer[2] & 0x7F) << 7) | (buffer[3] & 0x7F);
 }
 
+/**
+ * @brief 将大端序 4 字节数据转换为整数。
+ * @param buffer 指向 4 字节大端序数据的缓冲区。
+ * @return 转换后的无符号整数。
+ */
 inline uint32_t BigEndianToUint32(const uint8_t* buffer) {
   return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) |
          buffer[3];
 }
 
+/**
+ * @brief 解析 MP3 文件开头的 ID3v2 信息并同步音频采样率。
+ * @param file 已打开的 MP3 文件。
+ * @param path MP3 文件路径，用于日志输出。
+ * @param codec_dev 音频编解码器设备句柄。
+ * @param audio_sample_rate 当前音频采样率，解析到不同采样率时会更新。
+ * @return MP3 音频数据起始偏移。
+ */
 inline size_t ParseId3v2(FILE* file, const char* path,
     esp_codec_dev_handle_t codec_dev, uint32_t* audio_sample_rate) {
   long current_pos = ftell(file);
@@ -229,6 +247,10 @@ inline size_t ParseId3v2(FILE* file, const char* path,
   return static_cast<size_t>(mp3_data_start);
 }
 
+/**
+ * @brief 解析并打印 MP3 文件尾部的 ID3v1 信息。
+ * @param file 已打开的 MP3 文件。
+ */
 inline void ParseId3v1(FILE* file) {
   long original_pos = ftell(file);
 
@@ -261,6 +283,12 @@ inline void ParseId3v1(FILE* file) {
   fseek(file, original_pos, SEEK_SET);
 }
 
+/**
+ * @brief 解码并播放指定 MP3 文件。
+ * @param path MP3 文件路径。
+ * @param codec_dev 音频编解码器设备句柄。
+ * @param audio_sample_rate 当前音频采样率，播放过程中可能被同步更新。
+ */
 inline void PlayFile(const char* path, esp_codec_dev_handle_t codec_dev,
     uint32_t* audio_sample_rate) {
   esp_audio_dec_register_default();
@@ -350,4 +378,4 @@ inline void PlayFile(const char* path, esp_codec_dev_handle_t codec_dev,
 }
 
 }  // namespace mp3
-}  // namespace t_display_p4_air_example
+}  // namespace private_library

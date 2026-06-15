@@ -8,7 +8,7 @@
 #include <cmath>
 #include <memory>
 
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 #include "SensorBHI260AP.hpp"
 
 #define BOSCH_APP30_SHUTTLE_BHI260_FW
@@ -50,9 +50,9 @@ void InitBhi260ap(void) {
 
   Wire1.set_freq(1000000);
   if (!g_bhi260ap->begin(Wire1,
-          t_display_p4_air_example::device::bhi260ap::kI2cAddress,
-          t_display_p4_air_example::gpio::bhi260ap::kSda,
-          t_display_p4_air_example::gpio::bhi260ap::kScl)) {
+          lilygo_device_driver::t_display_p4_air::device::bhi260ap::kI2cAddress,
+          lilygo_device_driver::t_display_p4_air::gpio::bhi260ap::kSda,
+          lilygo_device_driver::t_display_p4_air::gpio::bhi260ap::kScl)) {
     printf("Bhi260ap begin failed (error code: %s)\n",
         g_bhi260ap->getError());
     return;
@@ -95,7 +95,8 @@ void InitBhi260ap(void) {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   Wire1.set_bus_handle(driver.bus().axp517_i2c_bus->bus_handle());
   InitBhi260ap();
 

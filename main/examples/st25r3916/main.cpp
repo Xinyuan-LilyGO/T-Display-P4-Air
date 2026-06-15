@@ -5,14 +5,15 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include "st25r3916_driver.h"
 
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
 
   St25r3916_Init();

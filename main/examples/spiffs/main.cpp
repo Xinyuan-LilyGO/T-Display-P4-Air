@@ -10,18 +10,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 #include "esp_spiffs.h"
 
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
 
   printf("Initializing spiffs\n");
   esp_vfs_spiffs_conf_t conf;
   if (!driver.InitSpiffs(
-          t_display_p4_air_example::device::spiffs::kBasePath, conf)) {
+          lilygo_device_driver::t_display_p4_air::device::spiffs::kBasePath, conf)) {
     printf("InitSpiffs failed\n");
     return;
   }

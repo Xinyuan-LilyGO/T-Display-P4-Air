@@ -5,13 +5,13 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <memory>
 
 #include "SensorQMC6310.hpp"
 
-float g_mag_data[3] = {0.0f, 0.0f, 0.0f};  // x, y, z，单位 uT
+float g_mag_data[3] = {0.0f, 0.0f, 0.0f};  // x, y, z, unit: uT
 bool g_mag_data_ready_flag = false;
 int64_t g_cycle_time_ms = 0;
 
@@ -22,9 +22,9 @@ bool InitQmc6310n(void) {
 
   Wire.set_freq(1000000);
   if (!g_qmc6310n->begin(Wire,
-          t_display_p4_air_example::device::qmc6310n::kI2cAddress,
-          t_display_p4_air_example::gpio::qmc6310n::kSda,
-          t_display_p4_air_example::gpio::qmc6310n::kScl)) {
+          lilygo_device_driver::t_display_p4_air::device::qmc6310n::kI2cAddress,
+          lilygo_device_driver::t_display_p4_air::gpio::qmc6310n::kSda,
+          lilygo_device_driver::t_display_p4_air::gpio::qmc6310n::kScl)) {
     printf("Qmc6310n begin failed\n");
     return false;
   }
@@ -41,7 +41,8 @@ bool InitQmc6310n(void) {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
   InitQmc6310n();
 

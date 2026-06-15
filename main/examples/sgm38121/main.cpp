@@ -5,12 +5,13 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   auto& sgm38121 = driver.chip().sgm38121;
 
   sgm38121->SetOutputVoltage(

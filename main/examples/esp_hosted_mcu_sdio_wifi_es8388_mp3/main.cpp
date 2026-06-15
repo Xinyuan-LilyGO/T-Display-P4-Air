@@ -5,8 +5,8 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/esp_hosted_example.h"
-#include "../common/mp3_example.h"
+#include "lilygo_device_driver_library.h"
+#include "mp3_driver.h"
 
 #include <algorithm>
 #include <cstring>
@@ -26,6 +26,22 @@ namespace {
 
 bool g_wifi_connected_flag = false;
 esp_codec_dev_handle_t g_codec_dev = nullptr;
+
+void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
+  auto& xl9535 = driver.chip().xl9535;
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kHigh);
+  vTaskDelay(pdMS_TO_TICKS(100));
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kLow);
+  vTaskDelay(pdMS_TO_TICKS(100));
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kHigh);
+  vTaskDelay(pdMS_TO_TICKS(100));
+}
 
 uint32_t GetSystemTimeMs() {
   return static_cast<uint32_t>(esp_timer_get_time() / 1000);
@@ -63,7 +79,7 @@ size_t ReadPrefixAndSkipId3v2(
 
   uint8_t major_version = header[3];
   uint8_t flags = header[5];
-  uint32_t tag_size = t_display_p4_air_example::mp3::SynchsafeToUint32(
+  uint32_t tag_size = private_library::mp3::SynchsafeToUint32(
       header + 6);
   printf("id3v2.%d tag detected, flags: 0x%02x, size: %lu bytes\n",
       major_version, flags, static_cast<unsigned long>(tag_size));
@@ -236,8 +252,9 @@ void InitWifiSta() {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
-  t_display_p4_air_example::esp_hosted::ResetEsp32c5(driver);
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
+  ResetEsp32c5(driver);
 
   esp_err_t result = esp_hosted_init();
   if (result != ESP_OK) {
@@ -249,8 +266,8 @@ extern "C" void app_main(void) {
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 
-  g_codec_dev = t_display_p4_air_example::es8388::InitCodec(
-      driver, t_display_p4_air_example::device::es8388::kSampleRate, 100, 20);
+  g_codec_dev = private_library::es8388::InitCodec(
+      driver, lilygo_device_driver::t_display_p4_air::device::es8388::kSampleRate, 100, 20);
   xTaskCreate(HttpStreamPlayTask, "stream_task", 10 * 1024, NULL, 5, NULL);
 
   while (1) {

@@ -5,7 +5,7 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <memory>
 
@@ -15,10 +15,11 @@ volatile bool g_lr1121_irq_flag = false;
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   auto esp32p4 = std::make_unique<cpp_bus_driver::Tool>();
 
-  esp32p4->SetGpioMode(t_display_p4_air_example::gpio::button::kEsp32p4Boot,
+  esp32p4->SetGpioMode(lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,
       cpp_bus_driver::Tool::GpioMode::kInput,
       cpp_bus_driver::Tool::GpioStatus::kPullup);
 
@@ -50,7 +51,7 @@ extern "C" void app_main(void) {
 
   while (1) {
     if (!esp32p4->GpioRead(
-            t_display_p4_air_example::gpio::button::kEsp32p4Boot)) {
+            lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot)) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("Lr1121 send package\n");

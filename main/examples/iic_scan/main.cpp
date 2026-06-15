@@ -5,7 +5,7 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <memory>
 #include <vector>
@@ -26,7 +26,8 @@ void IicScan(const char* name,
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
 
   while (1) {
     IicScan("port1", driver.bus().xl9535_i2c_bus);

@@ -5,7 +5,7 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <ctime>
 #include <vector>
@@ -29,7 +29,7 @@ time_t g_last_touch_time = 0;
 bool g_need_clear_lock_flag = false;
 
 lv_color_format_t LvglColorFormat() {
-  if (t_display_p4_air_example::kScreenBitsPerPixel == 24) {
+  if (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel == 24) {
     return lv_color_format_t::LV_COLOR_FORMAT_RGB888;
   }
   return lv_color_format_t::LV_COLOR_FORMAT_RGB565;
@@ -99,15 +99,15 @@ void DrawPoint(lv_event_t* e) {
 }
 
 void CreateCanvas() {
-  size_t draw_buffer_size = t_display_p4_air_example::kScreenWidth *
-                            t_display_p4_air_example::kScreenHeight *
+  size_t draw_buffer_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
+                            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
                             sizeof(lv_color_t);
   void* draw_buffer = heap_caps_malloc(draw_buffer_size, MALLOC_CAP_SPIRAM);
 
   g_canvas = lv_canvas_create(lv_screen_active());
   lv_canvas_set_buffer(g_canvas, draw_buffer,
-      t_display_p4_air_example::kScreenWidth,
-      t_display_p4_air_example::kScreenHeight, LvglColorFormat());
+      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
+      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight, LvglColorFormat());
   lv_canvas_fill_bg(g_canvas, lv_color_hex3(0xCCC), LV_OPA_COVER);
   lv_obj_center(g_canvas);
 
@@ -133,13 +133,13 @@ void InitLvgl() {
   lv_init();
 
   lv_display_t* display = lv_display_create(
-      t_display_p4_air_example::kScreenWidth,
-      t_display_p4_air_example::kScreenHeight);
+      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
+      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight);
   lv_display_set_user_data(display, g_screen);
   lv_display_set_color_format(display, LvglColorFormat());
 
-  size_t draw_buffer_size = t_display_p4_air_example::kScreenWidth *
-                            t_display_p4_air_example::kScreenHeight *
+  size_t draw_buffer_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
+                            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
                             sizeof(lv_color_t);
   void* buffer = heap_caps_malloc(draw_buffer_size, MALLOC_CAP_SPIRAM);
   assert(buffer);
@@ -198,7 +198,8 @@ void InitLvgl() {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   g_screen = driver.chip().hi8561.get();
   g_touch = driver.chip().hi8561_touch.get();
 

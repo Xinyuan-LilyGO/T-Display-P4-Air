@@ -1,5 +1,5 @@
 /*
- * @Description: ES8388 example helpers
+ * @Description: ES8388 driver helpers
  * @Author: LILYGO_L
  * @Date: 2026-05-24 16:30:00
  * @LastEditTime: 2026-05-24 16:30:00
@@ -14,9 +14,15 @@
 #include "esp_codec_dev.h"
 #include "esp_codec_dev_defaults.h"
 
-#include "t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
-namespace t_display_p4_air_example {
+namespace private_library {
+
+using Driver = lilygo_device_driver::TDisplayP4AirDriver;
+namespace board = lilygo_device_driver::t_display_p4_air;
+namespace gpio = board::gpio;
+namespace device = board::device;
+
 namespace es8388 {
 
 inline std::shared_ptr<cpp_bus_driver::HardwareI2c1> g_i2c_bus;
@@ -26,6 +32,11 @@ inline const audio_codec_data_if_t* g_data_if = nullptr;
 inline const audio_codec_gpio_if_t* g_gpio_if = nullptr;
 inline const audio_codec_if_t* g_codec_if = nullptr;
 
+/**
+ * @brief 将整数形式的 MCLK 倍频转换为 I2S 驱动枚举。
+ * @param value MCLK 倍频值。
+ * @return 匹配的 I2S MCLK 倍频枚举，不支持时返回 256 倍频。
+ */
 inline i2s_mclk_multiple_t MclkMultiple(int value) {
   switch (value) {
     case 128:
@@ -41,6 +52,11 @@ inline i2s_mclk_multiple_t MclkMultiple(int value) {
   }
 }
 
+/**
+ * @brief 将整数形式的采样位宽转换为 I2S 驱动枚举。
+ * @param value 单个采样点的位宽。
+ * @return 匹配的 I2S 采样位宽枚举，不支持时返回 16 位。
+ */
 inline i2s_data_bit_width_t BitsPerSample(int value) {
   switch (value) {
     case 8:
@@ -56,18 +72,15 @@ inline i2s_data_bit_width_t BitsPerSample(int value) {
   }
 }
 
-inline bool InitBootKey() {
-  static cpp_bus_driver::Tool tool;
-  return tool.SetGpioMode(gpio::button::kEsp32p4Boot,
-      cpp_bus_driver::Tool::GpioMode::kInput,
-      cpp_bus_driver::Tool::GpioStatus::kPullup);
-}
-
-inline bool BootKeyPressed() {
-  static cpp_bus_driver::Tool tool;
-  return !tool.GpioRead(gpio::button::kEsp32p4Boot);
-}
-
+/**
+ * @brief 通过 I2C 写入 ES8388 寄存器。
+ * @param ctrl 音频编解码器控制接口。
+ * @param reg 要写入的寄存器地址。
+ * @param reg_len 寄存器地址长度。
+ * @param data 要写入的数据。
+ * @param data_len 写入数据长度。
+ * @return 写入成功时返回 ESP_CODEC_DEV_OK，否则返回错误码。
+ */
 inline int WriteReg(const audio_codec_ctrl_if_t* ctrl, int reg, int reg_len,
     void* data, int data_len) {
   int len = reg_len + data_len;
@@ -98,6 +111,15 @@ inline int WriteReg(const audio_codec_ctrl_if_t* ctrl, int reg, int reg_len,
   return ESP_CODEC_DEV_OK;
 }
 
+/**
+ * @brief 通过 I2C 读取 ES8388 寄存器。
+ * @param ctrl 音频编解码器控制接口。
+ * @param reg 要读取的寄存器地址。
+ * @param reg_len 寄存器地址长度。
+ * @param data 读取数据输出缓冲区。
+ * @param data_len 读取数据长度。
+ * @return 读取成功时返回 ESP_CODEC_DEV_OK，否则返回错误码。
+ */
 inline int ReadReg(const audio_codec_ctrl_if_t* ctrl, int reg, int reg_len,
     void* data, int data_len) {
   uint8_t address_data[2] = {0};
@@ -117,6 +139,11 @@ inline int ReadReg(const audio_codec_ctrl_if_t* ctrl, int reg, int reg_len,
   return ESP_CODEC_DEV_OK;
 }
 
+/**
+ * @brief 创建 ES8388 使用的音频编解码器控制接口。
+ * @param bus ES8388 所在的 I2C 总线。
+ * @return 音频编解码器控制接口指针。
+ */
 inline audio_codec_ctrl_if_t* CreateCtrlIf(
     const std::shared_ptr<cpp_bus_driver::HardwareI2c1>& bus) {
   g_i2c_bus = bus;
@@ -132,6 +159,11 @@ inline audio_codec_ctrl_if_t* CreateCtrlIf(
   return &g_ctrl_if;
 }
 
+/**
+ * @brief 创建音频采样参数。
+ * @param sample_rate 音频采样率。
+ * @return 可传入 esp_codec_dev_open 的采样参数。
+ */
 inline esp_codec_dev_sample_info_t CreateSampleInfo(
     int sample_rate = device::es8388::kSampleRate) {
   return {
@@ -143,12 +175,21 @@ inline esp_codec_dev_sample_info_t CreateSampleInfo(
   };
 }
 
+/**
+ * @brief 创建 ES8388 使用的 I2C 总线对象。
+ * @param driver 已初始化的板级驱动对象。
+ * @return ES8388 I2C 总线对象。
+ */
 inline std::shared_ptr<cpp_bus_driver::HardwareI2c1> CreateI2cBus(
     Driver& driver) {
   return std::make_shared<cpp_bus_driver::HardwareI2c1>(
       driver.bus().xl9535_i2c_bus);
 }
 
+/**
+ * @brief 创建 ES8388 使用的 I2S 总线对象。
+ * @return ES8388 I2S 总线对象。
+ */
 inline std::shared_ptr<cpp_bus_driver::HardwareI2s> CreateI2sBus() {
   return std::make_shared<cpp_bus_driver::HardwareI2s>(
       gpio::es8388::kAdcData, gpio::es8388::kDacData,
@@ -159,6 +200,12 @@ inline std::shared_ptr<cpp_bus_driver::HardwareI2s> CreateI2sBus() {
       i2s_clock_src_t::I2S_CLK_SRC_APLL);
 }
 
+/**
+ * @brief 初始化 ES8388 所需的 I2C、I2S 和功放控制总线。
+ * @param driver 已初始化的板级驱动对象。
+ * @param sample_rate I2S 采样率。
+ * @return 总线初始化成功时返回 true，否则返回 false。
+ */
 inline bool InitBus(Driver& driver,
     int sample_rate = device::es8388::kSampleRate) {
   bool result = true;
@@ -184,6 +231,12 @@ inline bool InitBus(Driver& driver,
   return result;
 }
 
+/**
+ * @brief 创建 ES8388 音频编解码器设备。
+ * @param driver 已初始化的板级驱动对象。
+ * @param sample_rate 音频采样率。
+ * @return 创建成功时返回编解码器设备句柄，否则返回 nullptr。
+ */
 inline esp_codec_dev_handle_t CreateCodecDevice(Driver& driver,
     int sample_rate = device::es8388::kSampleRate) {
   if (!InitBus(driver, sample_rate)) {
@@ -224,6 +277,14 @@ inline esp_codec_dev_handle_t CreateCodecDevice(Driver& driver,
   return esp_codec_dev_new(&dev_cfg);
 }
 
+/**
+ * @brief 打开音频编解码器并设置输出音量和输入增益。
+ * @param codec_dev 音频编解码器设备句柄。
+ * @param sample_rate 音频采样率。
+ * @param out_volume 输出音量。
+ * @param in_gain 输入增益。
+ * @return 打开成功时返回 true，否则返回 false。
+ */
 inline bool OpenCodec(esp_codec_dev_handle_t codec_dev, int sample_rate,
     int out_volume = 60, int in_gain = 20) {
   if (codec_dev == nullptr) {
@@ -251,6 +312,14 @@ inline bool OpenCodec(esp_codec_dev_handle_t codec_dev, int sample_rate,
   return true;
 }
 
+/**
+ * @brief 初始化并打开 ES8388 音频编解码器。
+ * @param driver 已初始化的板级驱动对象。
+ * @param sample_rate 音频采样率。
+ * @param out_volume 输出音量。
+ * @param in_gain 输入增益。
+ * @return 初始化成功时返回编解码器设备句柄，否则返回 nullptr。
+ */
 inline esp_codec_dev_handle_t InitCodec(Driver& driver, int sample_rate,
     int out_volume = 60, int in_gain = 20) {
   esp_codec_dev_handle_t codec_dev = CreateCodecDevice(driver, sample_rate);
@@ -261,4 +330,4 @@ inline esp_codec_dev_handle_t InitCodec(Driver& driver, int sample_rate,
 }
 
 }  // namespace es8388
-}  // namespace t_display_p4_air_example
+}  // namespace private_library

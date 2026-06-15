@@ -29,7 +29,7 @@
 #include "nfc_utils.h"
 #include "rfal_nfc.h"
 #include "st25r3916_driver.h"
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 /* Uncomment this line if you want to use the NFC reader with I2C bus instead of SPI */
 #define I2C_ENABLED
@@ -41,7 +41,7 @@
 #define LED_AP2P_PIN -1
 #define LED_FIELD_PIN -1
 
-#define USER_BTN t_display_p4_air_example::gpio::button::kEsp32p4Boot
+#define USER_BTN lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot
 
 /* Definition of possible states the demo state machine could have */
 #define DEMO_ST_NOTINIT 0         /*!< Demo State:  Not initialized */
@@ -147,10 +147,10 @@ int PushButtonState = 0;
 /* SPI, Component and NFC */
 #ifndef I2C_ENABLED
 RfalRfST25R3916Class rfst25r3916(
-    &SPI, -1, t_display_p4_air_example::gpio::st25r3916::kInt);
+    &SPI, -1, lilygo_device_driver::t_display_p4_air::gpio::st25r3916::kInt);
 #else
 RfalRfST25R3916Class rfst25r3916(
-    &Wire, t_display_p4_air_example::gpio::st25r3916::kInt);
+    &Wire, lilygo_device_driver::t_display_p4_air::gpio::st25r3916::kInt);
 #endif
 RfalNfcClass rfal_nfc(&rfst25r3916);
 NdefClass ndef(&rfal_nfc);
@@ -285,12 +285,12 @@ static void ndefShowDemoUsage()
 void St25r3916_Init(void)
 {
 #ifndef I2C_ENABLED
-    SPI.begin(t_display_p4_air_example::gpio::spi::kPort1Sclk,
-              t_display_p4_air_example::gpio::spi::kPort1Miso,
-              t_display_p4_air_example::gpio::spi::kPort1Mosi, -1);
+    SPI.begin(lilygo_device_driver::t_display_p4_air::gpio::spi::kPort1Sclk,
+              lilygo_device_driver::t_display_p4_air::gpio::spi::kPort1Miso,
+              lilygo_device_driver::t_display_p4_air::gpio::spi::kPort1Mosi, -1);
 #else
-    Wire.begin(t_display_p4_air_example::gpio::st25r3916::kSda,
-               t_display_p4_air_example::gpio::st25r3916::kScl);
+    Wire.begin(lilygo_device_driver::t_display_p4_air::gpio::st25r3916::kSda,
+               lilygo_device_driver::t_display_p4_air::gpio::st25r3916::kScl);
 #endif
 
     pinMode(LED_A_PIN, OUTPUT);

@@ -5,14 +5,15 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <memory>
 
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   driver.InitNrf9151();
 
   auto& nrf9151_uart = driver.bus().nrf9151_uart_bus;
@@ -23,7 +24,7 @@ extern "C" void app_main(void) {
     size_t pc_uart_length = 0;
     uart_get_buffered_data_len(UART_NUM_0, &pc_uart_length);
     if (pc_uart_length > 0) {
-      // 预留 '\0'，方便按字符串打印调试内容
+
       auto buffer = std::make_unique<uint8_t[]>(pc_uart_length + 1);
       uart_read_bytes(
           UART_NUM_0, buffer.get(), pc_uart_length, pdMS_TO_TICKS(20));

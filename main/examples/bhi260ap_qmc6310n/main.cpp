@@ -8,7 +8,7 @@
 #include <cmath>
 #include <memory>
 
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 #include "SensorBHI260AP.hpp"
 #include "SensorQMC6310.hpp"
 
@@ -16,7 +16,7 @@
 #include "BoschFirmware.h"
 
 float g_accel_data[3] = {0.0f, 0.0f, 0.0f};  // x, y, z
-float g_mag_data[3] = {0.0f, 0.0f, 0.0f};    // x, y, z，单位 uT
+float g_mag_data[3] = {0.0f, 0.0f, 0.0f};    // x, y, z, unit: uT
 
 bool g_accel_data_ready_flag = false;
 bool g_mag_data_ready_flag = false;
@@ -55,9 +55,9 @@ void InitBhi260ap(void) {
 
   Wire1.set_freq(1000000);
   if (!g_bhi260ap->begin(Wire1,
-          t_display_p4_air_example::device::bhi260ap::kI2cAddress,
-          t_display_p4_air_example::gpio::bhi260ap::kSda,
-          t_display_p4_air_example::gpio::bhi260ap::kScl)) {
+          lilygo_device_driver::t_display_p4_air::device::bhi260ap::kI2cAddress,
+          lilygo_device_driver::t_display_p4_air::gpio::bhi260ap::kSda,
+          lilygo_device_driver::t_display_p4_air::gpio::bhi260ap::kScl)) {
     printf("Bhi260ap begin failed (error code: %s)\n",
         g_bhi260ap->getError());
     return;
@@ -87,9 +87,9 @@ bool InitQmc6310n(void) {
 
   Wire.set_freq(1000000);
   if (!g_qmc6310n->begin(Wire,
-          t_display_p4_air_example::device::qmc6310n::kI2cAddress,
-          t_display_p4_air_example::gpio::qmc6310n::kSda,
-          t_display_p4_air_example::gpio::qmc6310n::kScl)) {
+          lilygo_device_driver::t_display_p4_air::device::qmc6310n::kI2cAddress,
+          lilygo_device_driver::t_display_p4_air::gpio::qmc6310n::kSda,
+          lilygo_device_driver::t_display_p4_air::gpio::qmc6310n::kScl)) {
     printf("Qmc6310n begin failed\n");
     return false;
   }
@@ -105,7 +105,8 @@ bool InitQmc6310n(void) {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   Wire1.set_bus_handle(driver.bus().axp517_i2c_bus->bus_handle());
   Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
   InitBhi260ap();

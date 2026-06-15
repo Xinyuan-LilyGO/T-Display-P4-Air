@@ -5,7 +5,7 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/esp_hosted_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include <memory>
 
@@ -22,6 +22,22 @@
 namespace {
 
 bool g_wifi_connected_flag = false;
+
+void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
+  auto& xl9535 = driver.chip().xl9535;
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kHigh);
+  vTaskDelay(pdMS_TO_TICKS(100));
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kLow);
+  vTaskDelay(pdMS_TO_TICKS(100));
+  xl9535->GpioWrite(
+      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
+      cpp_bus_driver::Xl95x5::Value::kHigh);
+  vTaskDelay(pdMS_TO_TICKS(100));
+}
 
 uint32_t GetSystemTimeMs() {
   return static_cast<uint32_t>(esp_timer_get_time() / 1000);
@@ -139,8 +155,9 @@ void InitWifiSta() {
 extern "C" void app_main(void) {
   printf("Ciallo\n");
 
-  auto& driver = t_display_p4_air_example::InitDriver();
-  t_display_p4_air_example::esp_hosted::ResetEsp32c5(driver);
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
+  ResetEsp32c5(driver);
 
   esp_err_t result = esp_hosted_init();
   if (result != ESP_OK) {

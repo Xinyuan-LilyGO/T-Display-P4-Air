@@ -5,7 +5,7 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "../common/t_display_p4_air_example.h"
+#include "lilygo_device_driver_library.h"
 
 #include "driver/uart.h"
 #include "esp_sleep.h"
@@ -58,11 +58,11 @@ void RegisterWakeupSource() {
   }
 }
 
-void PrepareOptionalDevices(t_display_p4_air_example::Driver& driver) {
+void PrepareOptionalDevices(lilygo_device_driver::TDisplayP4AirDriver& driver) {
   driver.InitLr1121();
   driver.InitNrf9151();
 
-  if (!driver.InitSdmmc(t_display_p4_air_example::device::sd::kBasePath)) {
+  if (!driver.InitSdmmc(lilygo_device_driver::t_display_p4_air::device::sd::kBasePath)) {
     printf("InitSdmmc failed\n");
   }
 }
@@ -73,7 +73,8 @@ extern "C" void app_main(void) {
   printf("Ciallo\n");
   PrintWakeupReason();
 
-  auto& driver = t_display_p4_air_example::InitDriver();
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  driver.Init();
   PrepareOptionalDevices(driver);
 
   printf("Device is awake. Will enter deep sleep in 5 seconds...\n");
@@ -81,7 +82,7 @@ extern "C" void app_main(void) {
 
   printf("device sleep start\n");
   if (!driver.SetSleep(
-          t_display_p4_air_example::Driver::SleepLevel::kPowerOff, true)) {
+          lilygo_device_driver::TDisplayP4AirDriver::SleepLevel::kPowerOff, true)) {
     printf("SetSleep failed\n");
   }
 
