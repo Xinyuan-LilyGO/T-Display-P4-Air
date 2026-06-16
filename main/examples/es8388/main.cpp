@@ -2,12 +2,12 @@
  * @Description: es8388
  * @Author: LILYGO_L
  * @Date: 2026-03-03 13:51:54
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-16 14:18:16
  * @License: GPL 3.0
  */
 #include "es8388_driver.h"
 
-#include "New Notification 010_c2_b16_s44100.h"
+#include "new_notification_010_c2_b16_s44100.h"
 
 namespace {
 

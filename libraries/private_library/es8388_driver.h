@@ -2,7 +2,7 @@
  * @Description: ES8388 driver helpers
  * @Author: LILYGO_L
  * @Date: 2026-05-24 16:30:00
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-16 14:23:50
  * @License: GPL 3.0
  */
 
@@ -197,7 +197,7 @@ inline std::shared_ptr<cpp_bus_driver::HardwareI2s> CreateI2sBus() {
       i2s_port_t::I2S_NUM_0,
       cpp_bus_driver::HardwareI2s::DataMode::kInputOutput,
       cpp_bus_driver::HardwareI2s::I2sMode::kStd,
-      i2s_clock_src_t::I2S_CLK_SRC_APLL);
+      i2s_clock_src_t::I2S_CLK_SRC_DEFAULT);
 }
 
 /**
@@ -248,7 +248,7 @@ inline esp_codec_dev_handle_t CreateCodecDevice(Driver& driver,
       .port = i2s_bus->port(),
       .rx_handle = i2s_bus->rx_handle(),
       .tx_handle = i2s_bus->tx_handle(),
-      .clk_src = i2s_clock_src_t::I2S_CLK_SRC_APLL,
+      .clk_src = i2s_clock_src_t::I2S_CLK_SRC_DEFAULT,
   };
   g_data_if = audio_codec_new_i2s_data(&i2s_cfg);
   g_gpio_if = audio_codec_new_gpio();
