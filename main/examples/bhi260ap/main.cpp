@@ -14,9 +14,7 @@
 #define BOSCH_APP30_SHUTTLE_BHI260_FW
 #include "BoschFirmware.h"
 
-// 加速度计数据缓存：x, y, z
 float g_accel_data[3] = {0.0f, 0.0f, 0.0f};
-// 陀螺仪数据缓存：x, y, z
 float g_gyro_data[3] = {0.0f, 0.0f, 0.0f};
 
 bool g_accel_data_ready_flag = false;
@@ -25,14 +23,6 @@ int64_t g_cycle_time_ms = 0;
 
 auto g_bhi260ap = std::make_unique<SensorBHI260AP>();
 
-/**
- * @brief 根据加速度和陀螺仪数据计算姿态角
- * @param accel  加速度数据 [x, y, z]
- * @param gyro   陀螺仪数据 [x, y, z]
- * @param pitch  俯仰角（度）输出
- * @param roll   横滚角（度）输出
- * @param yaw    偏航角（度）输出（通过陀螺仪积分）
- */
 void CalculateOrientation(const float accel[3], const float gyro[3],
     float* pitch, float* roll, float* yaw) {
   *pitch =
@@ -40,7 +30,6 @@ void CalculateOrientation(const float accel[3], const float gyro[3],
       180.0f / M_PI;
   *roll = atan2f(accel[1], accel[2]) * 180.0f / M_PI;
 
-  // 通过陀螺仪 Z 轴积分计算偏航角
   static float last_yaw = 0.0f;
   static int64_t last_time_ms = 0;
   const int64_t now_ms = esp_timer_get_time() / 1000;
@@ -52,64 +41,74 @@ void CalculateOrientation(const float accel[3], const float gyro[3],
   *yaw = last_yaw;
 }
 
-/**
- * @brief 初始化 BHI260AP 传感器
- */
-void InitBhi260ap(void) {
+bool InitBhi260ap(void) {
   printf("InitBhi260ap\n");
 
-  // bosch_firmware_type 为 0 表示加载到 RAM
   g_bhi260ap->setFirmware(
       bosch_firmware_image, bosch_firmware_size, bosch_firmware_type, true);
   g_bhi260ap->setBootFromFlash(bosch_firmware_type);
 
-  // 获取 I2C 总线句柄
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   i2c_master_bus_handle_t i2c_handle = driver.bus().axp517_i2c_bus->bus_handle();
 
-  // 初始化传感器
   if (!g_bhi260ap->begin(i2c_handle,
           lilygo_device_driver::t_display_p4_air::device::bhi260ap::kI2cAddress)) {
     printf("Bhi260ap begin failed (error code: %s)\n",
         g_bhi260ap->getError());
-    return;
+    return false;
   }
 
   printf("Bhi260ap begin success\n");
   BoschSensorInfo info = g_bhi260ap->getSensorInfo();
   info.printInfo();
 
-  // 配置加速度计和陀螺仪直通模式，采样率 100Hz
-  g_bhi260ap->configure(BoschSensorID::ACCEL_PASSTHROUGH, 100.0, 0);
-  g_bhi260ap->configure(BoschSensorID::GYRO_PASSTHROUGH, 100.0, 0);
+  if (!g_bhi260ap->configure(BoschSensorID::ACCEL_PASSTHROUGH, 100.0, 0)) {
+    printf("Bhi260ap accel configure failed (error code: %s)\n",
+        g_bhi260ap->getError());
+    return false;
+  }
+  if (!g_bhi260ap->configure(BoschSensorID::GYRO_PASSTHROUGH, 100.0, 0)) {
+    printf("Bhi260ap gyro configure failed (error code: %s)\n",
+        g_bhi260ap->getError());
+    return false;
+  }
 
-  // 注册加速度数据回调
-  g_bhi260ap->onResultEvent(BoschSensorID::ACCEL_PASSTHROUGH,
-      [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
-          uint64_t* timestamp, void* user_data) {
-        struct bhy2_data_xyz data;
-        const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
-        bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
+  if (!g_bhi260ap->onResultEvent(BoschSensorID::ACCEL_PASSTHROUGH,
+          [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
+              uint64_t* timestamp, void* user_data) {
+            struct bhy2_data_xyz data;
+            const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
+            bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
 
-        g_accel_data[0] = data.x * scaling_factor;
-        g_accel_data[1] = data.y * scaling_factor;
-        g_accel_data[2] = data.z * scaling_factor;
-        g_accel_data_ready_flag = true;
-      });
+            g_accel_data[0] = data.x * scaling_factor;
+            g_accel_data[1] = data.y * scaling_factor;
+            g_accel_data[2] = data.z * scaling_factor;
+            g_accel_data_ready_flag = true;
+          })) {
+    printf("Bhi260ap accel callback register failed (error code: %s)\n",
+        g_bhi260ap->getError());
+    return false;
+  }
 
-  // 注册陀螺仪数据回调
-  g_bhi260ap->onResultEvent(BoschSensorID::GYRO_PASSTHROUGH,
-      [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
-          uint64_t* timestamp, void* user_data) {
-        struct bhy2_data_xyz data;
-        const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
-        bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
+  if (!g_bhi260ap->onResultEvent(BoschSensorID::GYRO_PASSTHROUGH,
+          [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
+              uint64_t* timestamp, void* user_data) {
+            struct bhy2_data_xyz data;
+            const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
+            bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
 
-        g_gyro_data[0] = data.x * scaling_factor;
-        g_gyro_data[1] = data.y * scaling_factor;
-        g_gyro_data[2] = data.z * scaling_factor;
-        g_gyro_data_ready_flag = true;
-      });
+            g_gyro_data[0] = data.x * scaling_factor;
+            g_gyro_data[1] = data.y * scaling_factor;
+            g_gyro_data[2] = data.z * scaling_factor;
+            g_gyro_data_ready_flag = true;
+          })) {
+    printf("Bhi260ap gyro callback register failed (error code: %s)\n",
+        g_bhi260ap->getError());
+    return false;
+  }
+
+  printf("InitBhi260ap success\n");
+  return true;
 }
 
 extern "C" void app_main(void) {
@@ -117,10 +116,12 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  InitBhi260ap();
+  const bool bhi260ap_ready = InitBhi260ap();
 
   while (1) {
-    g_bhi260ap->update();
+    if (bhi260ap_ready) {
+      g_bhi260ap->update();
+    }
 
     const int64_t now_ms = esp_timer_get_time() / 1000;
     if (now_ms > g_cycle_time_ms) {
