@@ -43,15 +43,15 @@ void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver)
     auto& xl9535 = driver.chip().xl9535;
     xl9535->GpioWrite(
         lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        cpp_bus_driver::Xl95x5::Value::kHigh);
+        1);
     vTaskDelay(pdMS_TO_TICKS(100));
     xl9535->GpioWrite(
         lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        cpp_bus_driver::Xl95x5::Value::kLow);
+        0);
     vTaskDelay(pdMS_TO_TICKS(100));
     xl9535->GpioWrite(
         lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        cpp_bus_driver::Xl95x5::Value::kHigh);
+        1);
     vTaskDelay(pdMS_TO_TICKS(100));
 }
 

@@ -170,7 +170,7 @@ inline esp_codec_dev_sample_info_t CreateSampleInfo(
       .bits_per_sample = BitsPerSample(device::es8388::kBitsPerSample),
       .channel = device::es8388::kChannel,
       .channel_mask = 0,
-      .sample_rate = sample_rate,
+      .sample_rate = static_cast<uint32_t>(sample_rate),
       .mclk_multiple = MclkMultiple(device::es8388::kMclkMultiple),
   };
 }
@@ -218,11 +218,11 @@ inline bool InitBus(Driver& driver,
   }
 
   result &= driver.chip().xl9535->GpioWrite(gpio::xl9535::kNs4150En,
-      cpp_bus_driver::Xl95x5::Value::kHigh);
+      1);
   result &= g_i2c_bus->Init(cpp_bus_driver::kDefaultValue,
       device::es8388::kI2cAddress);
   result &= g_i2s_bus->Init(MclkMultiple(device::es8388::kMclkMultiple),
-      sample_rate,
+      static_cast<uint32_t>(sample_rate),
       BitsPerSample(device::es8388::kBitsPerSample));
 
   if (!result) {

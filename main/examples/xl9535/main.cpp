@@ -21,13 +21,13 @@ extern "C" void app_main(void) {
 
   while (1) {
     xl9535->GpioWrite(lilygo_device_driver::t_display_p4_air::gpio::xl9535::kLed1,
-        cpp_bus_driver::Xl95x5::Value::kHigh);
+        1);
     printf("Xl9535 io7: %d\n",
         xl9535->GpioRead(cpp_bus_driver::Xl95x5::Pin::kIo7));
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     xl9535->GpioWrite(lilygo_device_driver::t_display_p4_air::gpio::xl9535::kLed1,
-        cpp_bus_driver::Xl95x5::Value::kLow);
+        0);
     printf("Xl9535 io7: %d\n",
         xl9535->GpioRead(cpp_bus_driver::Xl95x5::Pin::kIo7));
     vTaskDelay(pdMS_TO_TICKS(1000));
