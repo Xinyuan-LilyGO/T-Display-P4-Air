@@ -8,7 +8,7 @@ dependencies:
   private_library:
     override_path: "../libraries/private_library"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
@@ -60,7 +60,7 @@ dependencies:
   espressif/esp_codec_dev:
     version: "^1.5.4"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"

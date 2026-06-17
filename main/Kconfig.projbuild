@@ -13,8 +13,8 @@ menu "Example Configuration"
                 bool "axp517"
             config EXAMPLE_BUILD_AW86224
                 bool "aw86224"
-            config EXAMPLE_BUILD_ES8388
-                bool "es8388"
+            config EXAMPLE_BUILD_ES8389
+                bool "es8389"
             config EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW
                 bool "screen_lvgl_touch_draw"
             config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI

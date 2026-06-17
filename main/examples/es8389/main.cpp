@@ -1,11 +1,11 @@
 /*
- * @Description: es8388
+ * @Description: es8389
  * @Author: LILYGO_L
  * @Date: 2026-03-03 13:51:54
- * @LastEditTime: 2026-06-16 14:18:16
+ * @LastEditTime: 2026-06-17 10:55:00
  * @License: GPL 3.0
  */
-#include "es8388_driver.h"
+#include "es8389_driver.h"
 
 #include "new_notification_010_c2_b16_s44100.h"
 
@@ -34,10 +34,10 @@ extern "C" void app_main(void) {
   driver.Init();
   InitBootKey();
 
-  esp_codec_dev_handle_t codec_dev =
-      private_library::es8388::InitCodec(
-          driver, lilygo_device_driver::t_display_p4_air::device::es8388::kSampleRate, 100,
-          20);
+  esp_codec_dev_handle_t codec_dev = private_library::es8389::InitCodec(
+      driver,
+      lilygo_device_driver::t_display_p4_air::device::es8389::kSampleRate, 100,
+      20);
 
   while (1) {
     if (BootKeyPressed()) {
