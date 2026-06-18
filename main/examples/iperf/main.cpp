@@ -2,7 +2,7 @@
  * @Description: None
  * @Author: LILYGO_L
  * @Date: 2026-02-09 14:35:28
- * @LastEditTime: 2026-03-12 17:20:33
+ * @LastEditTime: 2026-06-18 15:43:03
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -37,23 +37,6 @@ extern int wifi_cmd_clr_rx_statistics(int argc, char **argv);
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
 #include "esp_extconn.h"
 #endif
-
-void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver)
-{
-    auto& xl9535 = driver.chip().xl9535;
-    xl9535->GpioWrite(
-        lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        1);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    xl9535->GpioWrite(
-        lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        0);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    xl9535->GpioWrite(
-        lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-        1);
-    vTaskDelay(pdMS_TO_TICKS(100));
-}
 
 void iperf_hook_show_wifi_stats(iperf_traffic_type_t type, iperf_status_t status)
 {
@@ -96,7 +79,6 @@ extern "C" void app_main(void)
 
     auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
     driver.Init();
-    ResetEsp32c5(driver);
 
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
     esp_extconn_config_t ext_config = ESP_EXTCONN_CONFIG_DEFAULT();
