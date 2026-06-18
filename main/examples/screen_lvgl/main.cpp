@@ -2,7 +2,7 @@
  * @Description: screen_lvgl
  * @Author: LILYGO_L
  * @Date: 2025-06-13 11:31:49
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 16:38:35
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -19,7 +19,8 @@ cpp_bus_driver::Hi8561* g_screen = nullptr;
 extern "C" void example_lvgl_demo_ui(lv_display_t* disp);
 
 lv_color_format_t LvglColorFormat() {
-  if (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel == 24) {
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  if (driver.screen_info().bits_per_pixel == 24) {
     return lv_color_format_t::LV_COLOR_FORMAT_RGB888;
   }
   return lv_color_format_t::LV_COLOR_FORMAT_RGB565;
@@ -30,6 +31,7 @@ uint16_t Rgb888ToRgb565(uint8_t red, uint8_t green, uint8_t blue) {
 }
 
 void ColorBarBuffer(void* buffer, int width, int height) {
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   const uint8_t colors[][3] = {
       {0xFF, 0x00, 0x00}, {0xFF, 0x7F, 0x00}, {0xFF, 0xFF, 0x00},
       {0x00, 0xFF, 0x00}, {0x00, 0xFF, 0xFF}, {0x00, 0x00, 0xFF},
@@ -41,7 +43,7 @@ void ColorBarBuffer(void* buffer, int width, int height) {
     block_height = 1;
   }
 
-  if (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel == 16) {
+  if (driver.screen_info().bits_per_pixel == 16) {
     auto* pixels = static_cast<uint16_t*>(buffer);
     for (int y = 0; y < height; y++) {
       int index = y / block_height;
@@ -94,15 +96,15 @@ void InitLvgl() {
   printf("InitLvgl\n");
   lv_init();
 
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  const auto& screen_info = driver.screen_info();
   lv_display_t* display = lv_display_create(
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight);
+      screen_info.width, screen_info.height);
   lv_display_set_user_data(display, g_screen);
   lv_display_set_color_format(display, LvglColorFormat());
 
-  size_t draw_buffer_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
-                            sizeof(lv_color_t);
+  size_t draw_buffer_size =
+      screen_info.width * screen_info.height * screen_info.bits_per_pixel / 8;
   void* buffer = heap_caps_malloc(draw_buffer_size, MALLOC_CAP_SPIRAM);
   assert(buffer);
   lv_display_set_buffers(
@@ -134,7 +136,6 @@ void InitLvgl() {
               void* user_ctx) -> bool { return false; },
   };
 
-  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   esp_err_t result = esp_lcd_dpi_panel_register_event_callbacks(
       driver.bus().screen_mipi_bus->device_handle(), &cbs, display);
   if (result != ESP_OK) {
@@ -170,19 +171,27 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  g_screen = driver.chip().hi8561.get();
 
-  size_t screen_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                       lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
-                       lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel / 8;
+  if (!driver.status().hi8561.init_flag ||
+      !driver.status().hi8561_backlight.init_flag) {
+    printf("screen init failed\n");
+    return;
+  }
+  g_screen = driver.chip().hi8561.get();
+  if (g_screen == nullptr || driver.chip().hi8561_backlight == nullptr) {
+    printf("screen driver is null\n");
+    return;
+  }
+
+  const auto& screen_info = driver.screen_info();
+  size_t screen_size =
+      screen_info.width * screen_info.height * screen_info.bits_per_pixel / 8;
   void* color_buffer =
       heap_caps_aligned_calloc(16, 1, screen_size, MALLOC_CAP_SPIRAM);
   if (color_buffer != nullptr) {
-    ColorBarBuffer(color_buffer, lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-        lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight);
+    ColorBarBuffer(color_buffer, screen_info.width, screen_info.height);
     if (!g_screen->SendColorStreamCoordinate(0, 0,
-            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight, color_buffer)) {
+            screen_info.width, screen_info.height, color_buffer)) {
       printf("SendColorStreamCoordinate failed\n");
     }
     heap_caps_free(color_buffer);

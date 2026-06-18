@@ -8,7 +8,7 @@
 
 static lv_style_t style_bullet;
 static lv_obj_t *scale1;
-static const lv_font_t *font_normal = &lv_font_montserrat_16;
+static const lv_font_t *font_normal = &lv_font_montserrat_26;
 
 static lv_obj_t *create_scale_box(lv_obj_t *parent, const char *text1, const char *text2, const char *text3)
 {

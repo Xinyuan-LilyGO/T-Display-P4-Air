@@ -52,7 +52,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
 
   lvgl/lvgl:
-    version: "9.4.0"
+    version: "9.5.0"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW} == True"
