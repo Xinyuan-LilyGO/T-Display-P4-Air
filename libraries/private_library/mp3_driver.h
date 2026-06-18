@@ -15,11 +15,23 @@
 
 #include "esp_audio_dec.h"
 #include "esp_audio_dec_default.h"
-
-#include "es8388_driver.h"
+#include "esp_codec_dev.h"
 
 namespace private_library {
 namespace mp3 {
+
+inline bool OpenCodec(esp_codec_dev_handle_t codec_dev, uint32_t sample_rate) {
+  esp_codec_dev_sample_info_t sample_info = {
+      .bits_per_sample = 16,
+      .channel = 2,
+      .channel_mask = ESP_CODEC_DEV_MAKE_CHANNEL_MASK(0) |
+                      ESP_CODEC_DEV_MAKE_CHANNEL_MASK(1),
+      .sample_rate = sample_rate,
+      .mclk_multiple = 256,
+  };
+
+  return esp_codec_dev_open(codec_dev, &sample_info) == ESP_CODEC_DEV_OK;
+}
 
 /**
  * @brief 将 ID3v2 synchsafe 编码的 4 字节数据转换为整数。
@@ -235,7 +247,7 @@ inline size_t ParseId3v2(FILE* file, const char* path,
           static_cast<unsigned long>(*audio_sample_rate),
           static_cast<unsigned long>(sample_rate));
       esp_codec_dev_close(codec_dev);
-      if (es8388::OpenCodec(codec_dev, sample_rate)) {
+      if (OpenCodec(codec_dev, sample_rate)) {
         *audio_sample_rate = sample_rate;
       }
     }

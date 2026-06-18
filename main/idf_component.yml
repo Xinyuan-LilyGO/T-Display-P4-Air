@@ -9,9 +9,9 @@ dependencies:
     override_path: "../libraries/private_library"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SPIFFS_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
 
   cmd_system:
     override_path: "../libraries/cmd_system"
@@ -57,30 +57,23 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW} == True"
 
-  espressif/esp_codec_dev:
-    version: "^1.5.10"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
-
   espressif/esp_hosted:
-    version: "2.11.5"
+    version: "2.12.3"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   espressif/esp_wifi_remote:
-    version: "1.3.2"
+    version: ">=1.6.1,<2.0"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
@@ -102,9 +95,9 @@ dependencies:
   espressif/esp_audio_codec:
     version: "^2.4.1"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SPIFFS_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
 
   radiolib_cpp_bus_driver:
     override_path: "../libraries/radiolib_cpp_bus_driver"

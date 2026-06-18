@@ -25,10 +25,10 @@ menu "Example Configuration"
                 bool "esp_hosted_mcu_sdio_wifi_http_download_file"
             config EXAMPLE_BUILD_SPIFFS
                 bool "spiffs"
-            config EXAMPLE_BUILD_ES8388_SPIFFS_MP3
-                bool "es8388_spiffs_mp3"
-            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3
-                bool "esp_hosted_mcu_sdio_wifi_es8388_mp3"
+            config EXAMPLE_BUILD_ES8389_SPIFFS_MP3
+                bool "es8389_spiffs_mp3"
+            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3
+                bool "esp_hosted_mcu_sdio_wifi_es8389_mp3"
             config EXAMPLE_BUILD_BHI260AP
                 bool "bhi260ap"
             config EXAMPLE_BUILD_QMC6310N
@@ -45,8 +45,8 @@ menu "Example Configuration"
                 bool "st25r3916"
             config EXAMPLE_BUILD_IR_NEC_TRANSCEIVER
                 bool "ir_nec_transceiver"
-            config EXAMPLE_BUILD_ES8388_SD_MP3
-                bool "es8388_sd_mp3"
+            config EXAMPLE_BUILD_ES8389_SD_MP3
+                bool "es8389_sd_mp3"
             config EXAMPLE_BUILD_NRF9151_UART
                 bool "nrf9151_uart"
             config EXAMPLE_BUILD_RF_TEST

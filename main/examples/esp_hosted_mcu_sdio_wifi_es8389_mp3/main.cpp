@@ -1,8 +1,8 @@
 /*
- * @Description: esp_hosted_mcu_sdio_wifi_es8388_mp3
+ * @Description: esp_hosted_mcu_sdio_wifi_es8389_mp3
  * @Author: LILYGO_L
  * @Date: 2026-02-26 10:39:24
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 14:36:25
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -18,30 +18,14 @@
 #include "esp_http_client.h"
 #include "esp_wifi.h"
 
-#define WIFI_SSID "xinyuandianzi_AX_Wi-Fi5"
-#define WIFI_PASSWORD "AA15994823428"
+#define WIFI_SSID "LilyGo-AABB-5G"
+#define WIFI_PASSWORD "xinyuandianzi"
 #define DOWNLOAD_URL "https://s9.imslp.org/files/imglnks/usimg/b/ba/IMSLP479619-PMLP02312-Nocturne,_Op.9_No.2_in_E-flat_major_Aya_Higuchi.mp3"
 
 namespace {
 
 bool g_wifi_connected_flag = false;
 esp_codec_dev_handle_t g_codec_dev = nullptr;
-
-void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  auto& xl9535 = driver.chip().xl9535;
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      0);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-}
 
 uint32_t GetSystemTimeMs() {
   return static_cast<uint32_t>(esp_timer_get_time() / 1000);
@@ -254,7 +238,13 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  ResetEsp32c5(driver);
+
+  // driver.SetUartTarget(
+  //     lilygo_device_driver::TDisplayP4AirDriver::UartTarget::kEsp32c5);
+  // driver.EnterEsp32c5DownloadMode();
+  // while (1) {
+  //   vTaskDelay(pdMS_TO_TICKS(1000));
+  // }
 
   esp_err_t result = esp_hosted_init();
   if (result != ESP_OK) {
@@ -266,8 +256,11 @@ extern "C" void app_main(void) {
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 
-  g_codec_dev = private_library::es8388::InitCodec(
-      driver, lilygo_device_driver::t_display_p4_air::device::es8388::kSampleRate, 100, 20);
+  g_codec_dev = driver.es8389_output_codec_dev();
+  if ((g_codec_dev == nullptr) || (!driver.status().es8389.init_flag)) {
+    printf("Es8389 init failed\n");
+    return;
+  }
   xTaskCreate(HttpStreamPlayTask, "stream_task", 10 * 1024, NULL, 5, NULL);
 
   while (1) {
