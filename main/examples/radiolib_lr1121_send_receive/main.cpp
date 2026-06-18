@@ -19,33 +19,17 @@ extern "C" void app_main(void) {
   driver.Init();
   auto esp32p4 = std::make_unique<cpp_bus_driver::Tool>();
 
-  esp32p4->SetGpioMode(lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,
+  esp32p4->SetGpioMode(
+      lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,
       cpp_bus_driver::Tool::GpioMode::kInput,
       cpp_bus_driver::Tool::GpioStatus::kPullup);
 
-  if (!driver.InitLr1121()) {
+  if (!driver.status().lr1121.init_flag || driver.chip().lr1121 == nullptr) {
     printf("InitLr1121 failed\n");
     return;
   }
   auto* lr1121 = driver.chip().lr1121;
 
-  const uint32_t rf_switch_dio_pins[] = {
-      RADIOLIB_LR11X0_DIO5, RADIOLIB_LR11X0_DIO6, RADIOLIB_NC, RADIOLIB_NC,
-      RADIOLIB_NC,
-  };
-
-  const Module::RfSwitchMode_t rf_switch_table[] = {
-      {LR11x0::MODE_STBY, {0, 0}},
-      {LR11x0::MODE_RX, {0, 1}},
-      {LR11x0::MODE_TX, {0, 0}},
-      {LR11x0::MODE_TX_HP, {1, 0}},
-      {LR11x0::MODE_TX_HF, {0, 0}},
-      {LR11x0::MODE_GNSS, {0, 0}},
-      {LR11x0::MODE_WIFI, {0, 0}},
-      END_OF_MODE_TABLE,
-  };
-
-  lr1121->setRfSwitchTable(rf_switch_dio_pins, rf_switch_table);
   lr1121->setIrqAction([]() { g_lr1121_irq_flag = true; });
   lr1121->startReceive();
 
