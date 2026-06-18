@@ -2,7 +2,7 @@
  * @Description: screen_lvgl_touch_draw
  * @Author: LILYGO_L
  * @Date: 2025-06-13 11:35:38
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 17:58:55
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -29,7 +29,8 @@ time_t g_last_touch_time = 0;
 bool g_need_clear_lock_flag = false;
 
 lv_color_format_t LvglColorFormat() {
-  if (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel == 24) {
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  if (driver.screen_info().bits_per_pixel == 24) {
     return lv_color_format_t::LV_COLOR_FORMAT_RGB888;
   }
   return lv_color_format_t::LV_COLOR_FORMAT_RGB565;
@@ -99,15 +100,15 @@ void DrawPoint(lv_event_t* e) {
 }
 
 void CreateCanvas() {
-  size_t draw_buffer_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
-                            sizeof(lv_color_t);
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  const auto& screen_info = driver.screen_info();
+  size_t draw_buffer_size =
+      screen_info.width * screen_info.height * screen_info.bits_per_pixel / 8;
   void* draw_buffer = heap_caps_malloc(draw_buffer_size, MALLOC_CAP_SPIRAM);
 
   g_canvas = lv_canvas_create(lv_screen_active());
-  lv_canvas_set_buffer(g_canvas, draw_buffer,
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight, LvglColorFormat());
+  lv_canvas_set_buffer(g_canvas, draw_buffer, screen_info.width,
+      screen_info.height, LvglColorFormat());
   lv_canvas_fill_bg(g_canvas, lv_color_hex3(0xCCC), LV_OPA_COVER);
   lv_obj_center(g_canvas);
 
@@ -132,15 +133,15 @@ void InitLvgl() {
   printf("InitLvgl\n");
   lv_init();
 
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  const auto& screen_info = driver.screen_info();
   lv_display_t* display = lv_display_create(
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-      lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight);
+      screen_info.width, screen_info.height);
   lv_display_set_user_data(display, g_screen);
   lv_display_set_color_format(display, LvglColorFormat());
 
-  size_t draw_buffer_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                            lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
-                            sizeof(lv_color_t);
+  size_t draw_buffer_size =
+      screen_info.width * screen_info.height * screen_info.bits_per_pixel / 8;
   void* buffer = heap_caps_malloc(draw_buffer_size, MALLOC_CAP_SPIRAM);
   assert(buffer);
   lv_display_set_buffers(
@@ -171,7 +172,6 @@ void InitLvgl() {
               esp_lcd_dpi_panel_event_data_t* edata,
               void* user_ctx) -> bool { return false; },
   };
-  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   esp_err_t result = esp_lcd_dpi_panel_register_event_callbacks(
       driver.bus().screen_mipi_bus->device_handle(), &cbs, display);
   if (result != ESP_OK) {
@@ -180,7 +180,10 @@ void InitLvgl() {
 
   const esp_timer_create_args_t lvgl_tick_timer_args = {
       .callback = [](void* arg) { lv_tick_inc(kLvglTickPeriodMs); },
+      .arg = nullptr,
+      .dispatch_method = ESP_TIMER_TASK,
       .name = "lvgl_tick",
+      .skip_unhandled_events = false,
   };
   esp_timer_handle_t lvgl_tick_timer = nullptr;
   result = esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer);
@@ -200,8 +203,20 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
+  
+  if (!driver.status().hi8561.init_flag ||
+      !driver.status().hi8561_touch.init_flag ||
+      !driver.status().hi8561_backlight.init_flag) {
+    printf("screen or touch init failed\n");
+    return;
+  }
   g_screen = driver.chip().hi8561.get();
   g_touch = driver.chip().hi8561_touch.get();
+  if (g_screen == nullptr || g_touch == nullptr ||
+      driver.chip().hi8561_backlight == nullptr) {
+    printf("screen or touch driver is null\n");
+    return;
+  }
 
   InitLvgl();
   xTaskCreate(LvglUiTask, "LvglUiTask", 4 * 1024, NULL, 2, NULL);
