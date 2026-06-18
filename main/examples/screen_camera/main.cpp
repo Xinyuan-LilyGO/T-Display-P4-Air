@@ -2,7 +2,7 @@
  * @Description: screen_camera
  * @Author: LILYGO_L
  * @Date: 2026-02-28 09:19:50
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 17:58:29
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -16,6 +16,8 @@
 #include "esp_video_init.h"
 
 namespace {
+
+namespace device = lilygo_device_driver::t_display_p4_air::device;
 
 ppa_client_handle_t g_ppa_srm_handle = nullptr;
 size_t g_data_cache_line_size = 0;
@@ -36,41 +38,40 @@ ppa_srm_color_mode_t PpaColorModeFromBits(int bits_per_pixel) {
 }
 
 ppa_srm_color_mode_t CameraPpaColorMode() {
-  if (lilygo_device_driver::t_display_p4_air::device::camera::kType ==
-      lilygo_device_driver::t_display_p4_air::device::CameraType::kOv5645) {
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  if (driver.camera_info().type == device::CameraType::kOv5645) {
     return ppa_srm_color_mode_t::PPA_SRM_COLOR_MODE_RGB565;
   }
-  return PpaColorModeFromBits(
-      lilygo_device_driver::t_display_p4_air::device::camera::kBitsPerPixel);
+  return PpaColorModeFromBits(driver.camera_info().bits_per_pixel);
 }
 
 video_fmt_t CameraVideoFormat() {
-  if (lilygo_device_driver::t_display_p4_air::device::camera::kType ==
-      lilygo_device_driver::t_display_p4_air::device::CameraType::kOv5645) {
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  if (driver.camera_info().type == device::CameraType::kOv5645) {
     return video_fmt_t::APP_VIDEO_FMT_RGB565;
   }
-  if (lilygo_device_driver::t_display_p4_air::device::camera::kBitsPerPixel == 24) {
+  if (driver.camera_info().bits_per_pixel == 24) {
     return video_fmt_t::APP_VIDEO_FMT_RGB888;
   }
   return video_fmt_t::APP_VIDEO_FMT_RGB565;
 }
 
 void FillWhiteScreen() {
-  size_t screen_size = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                       lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight *
-                       lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel / 8;
+  auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  const auto& screen_info = driver.screen_info();
+  size_t screen_size =
+      screen_info.width * screen_info.height * screen_info.bits_per_pixel / 8;
   void* white_buffer =
       heap_caps_aligned_calloc(16, 1, screen_size, MALLOC_CAP_SPIRAM);
   if (white_buffer == nullptr) {
     return;
   }
 
-  if (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel == 16) {
+  if (screen_info.bits_per_pixel == 16) {
     auto* pixels = static_cast<uint16_t*>(white_buffer);
-    for (size_t i = 0;
-         i < lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth *
-                 lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight;
-         i++) {
+    const size_t pixel_count =
+        static_cast<size_t>(screen_info.width) * screen_info.height;
+    for (size_t i = 0; i < pixel_count; i++) {
       pixels[i] = 0xFFFF;
     }
   } else {
@@ -78,8 +79,7 @@ void FillWhiteScreen() {
   }
 
   if (!g_screen->SendColorStreamCoordinate(0, 0,
-          lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth,
-          lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight, white_buffer)) {
+          screen_info.width, screen_info.height, white_buffer)) {
     printf("SendColorStreamCoordinate white failed\n");
   }
   heap_caps_free(white_buffer);
@@ -103,20 +103,20 @@ void CameraVideoFrameOperation(uint8_t* camera_buf, uint8_t camera_buf_index,
   if (!driver.status().hi8561.init_flag) {
     return;
   }
+  const auto& screen_info = driver.screen_info();
 
   uint32_t input_img_block_width =
-      camera_buf_hes > lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth
-          ? (camera_buf_hes - lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth) / 2
+      camera_buf_hes > static_cast<uint32_t>(screen_info.width)
+          ? (camera_buf_hes - screen_info.width) / 2
           : 0;
   uint32_t input_img_block_height = 0;
-  uint32_t input_img_width = lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenWidth;
+  uint32_t input_img_width = screen_info.width;
   uint32_t input_img_height = camera_buf_ves;
   uint32_t output_img_width = input_img_width;
   uint32_t output_img_height = input_img_height;
 
   size_t output_buffer_size = output_img_width * output_img_height *
-                              (lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel /
-                                  8);
+                              (screen_info.bits_per_pixel / 8);
   auto output_buffer = std::unique_ptr<uint8_t[], void (*)(uint8_t*)>(
       static_cast<uint8_t*>(heap_caps_aligned_calloc(g_data_cache_line_size, 1,
           output_buffer_size, MALLOC_CAP_SPIRAM)),
@@ -148,7 +148,7 @@ void CameraVideoFrameOperation(uint8_t* camera_buf, uint8_t camera_buf_index,
               .block_offset_x = 0,
               .block_offset_y = 0,
               .srm_cm = PpaColorModeFromBits(
-                  lilygo_device_driver::t_display_p4_air::device::screen::kBitsPerPixel),
+                  screen_info.bits_per_pixel),
           },
       .rotation_angle = PPA_SRM_ROTATION_ANGLE_0,
       .scale_x = 1,
@@ -167,7 +167,9 @@ void CameraVideoFrameOperation(uint8_t* camera_buf, uint8_t camera_buf_index,
   }
 
   int y_start =
-      (lilygo_device_driver::t_display_p4_air::device::hi8561::kScreenHeight - output_img_height) / 2;
+      screen_info.height > static_cast<int>(output_img_height)
+          ? (screen_info.height - static_cast<int>(output_img_height)) / 2
+          : 0;
   if (!g_screen->SendColorStreamCoordinate(0, y_start, output_img_width,
           output_img_height + y_start, output_buffer.get())) {
     printf("SendColorStreamCoordinate failed\n");
@@ -191,6 +193,7 @@ bool AppVideoInit() {
   }
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
+  const auto& camera_info = driver.camera_info();
   esp_video_init_csi_config_t csi_config = {
       .sccb_config =
           {
@@ -221,7 +224,7 @@ bool AppVideoInit() {
   }
 
   result = app_video_set_bufs(
-      g_video_cam_fd0, lilygo_device_driver::t_display_p4_air::device::camera::kBufferCount, NULL);
+      g_video_cam_fd0, camera_info.buffer_count, NULL);
   if (result != ESP_OK) {
     printf("app_video_set_bufs failed (error code: %#X)\n", result);
     return false;
@@ -250,7 +253,17 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
+  
+  if (!driver.status().hi8561.init_flag ||
+      !driver.status().hi8561_backlight.init_flag) {
+    printf("screen init failed\n");
+    return;
+  }
   g_screen = driver.chip().hi8561.get();
+  if (g_screen == nullptr || driver.chip().hi8561_backlight == nullptr) {
+    printf("screen driver is null\n");
+    return;
+  }
 
   g_camera_init_flag = AppVideoInit();
   printf("AppVideoInit %s\n", g_camera_init_flag ? "success" : "failed");
@@ -260,7 +273,7 @@ extern "C" void app_main(void) {
 
   if (g_camera_init_flag) {
     esp_err_t result = app_video_set_bufs(
-        g_video_cam_fd0, lilygo_device_driver::t_display_p4_air::device::camera::kBufferCount, NULL);
+        g_video_cam_fd0, driver.camera_info().buffer_count, NULL);
     if (result != ESP_OK) {
       printf("app_video_set_bufs failed (error code: %#X)\n", result);
     }

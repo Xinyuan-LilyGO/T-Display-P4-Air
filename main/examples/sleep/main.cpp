@@ -59,9 +59,6 @@ void RegisterWakeupSource() {
 }
 
 void PrepareOptionalDevices(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  driver.InitLr1121();
-  driver.InitNrf9151();
-
   if (!driver.InitSdmmc(lilygo_device_driver::t_display_p4_air::device::sd::kBasePath)) {
     printf("InitSdmmc failed\n");
   }

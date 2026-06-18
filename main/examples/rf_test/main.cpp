@@ -272,28 +272,13 @@ void Nrf9151AtTask(void* arg) {
   }
 }
 
-void InitLr1121(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  if (!driver.InitLr1121()) {
+void ConfigLr1121(lilygo_device_driver::TDisplayP4AirDriver& driver) {
+  if (!driver.status().lr1121.init_flag || driver.chip().lr1121 == nullptr) {
     printf("lr1121 init failed\n");
     return;
   }
 
   g_lr1121 = driver.chip().lr1121;
-  const uint32_t rfswitch_dio_pins[] = {
-      RADIOLIB_LR11X0_DIO5, RADIOLIB_LR11X0_DIO6, RADIOLIB_NC, RADIOLIB_NC,
-      RADIOLIB_NC,
-  };
-  const Module::RfSwitchMode_t rfswitch_table[] = {
-      {LR11x0::MODE_STBY, {0, 0}},
-      {LR11x0::MODE_RX, {0, 1}},
-      {LR11x0::MODE_TX, {0, 0}},
-      {LR11x0::MODE_TX_HP, {1, 0}},
-      {LR11x0::MODE_TX_HF, {0, 0}},
-      {LR11x0::MODE_GNSS, {0, 0}},
-      {LR11x0::MODE_WIFI, {0, 0}},
-      END_OF_MODE_TABLE,
-  };
-  g_lr1121->setRfSwitchTable(rfswitch_dio_pins, rfswitch_table);
 }
 
 }  // namespace
@@ -305,8 +290,7 @@ extern "C" void app_main(void) {
   driver.Init();
   ResetEsp32c5(driver);
 
-  InitLr1121(driver);
-  driver.InitNrf9151();
+  ConfigLr1121(driver);
   g_nrf9151_uart = driver.bus().nrf9151_uart_bus;
 
   Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
