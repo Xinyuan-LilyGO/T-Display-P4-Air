@@ -58,9 +58,8 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW} == True"
 
   espressif/esp_codec_dev:
-    version: "^1.5.4"
+    version: "^1.5.10"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8388_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8388_SD_MP3} == True"

@@ -2,14 +2,15 @@
  * @Description: es8389
  * @Author: LILYGO_L
  * @Date: 2026-03-03 13:51:54
- * @LastEditTime: 2026-06-17 10:55:00
+ * @LastEditTime: 2026-06-18 09:17:52
  * @License: GPL 3.0
  */
-#include "es8389_driver.h"
-
+#include "lilygo_device_driver_library.h"
 #include "new_notification_010_c2_b16_s44100.h"
 
 namespace {
+
+constexpr size_t kAudioBufferSampleCount = 1024;
 
 bool InitBootKey() {
   static cpp_bus_driver::Tool tool;
@@ -34,25 +35,41 @@ extern "C" void app_main(void) {
   driver.Init();
   InitBootKey();
 
-  esp_codec_dev_handle_t codec_dev = private_library::es8389::InitCodec(
-      driver,
-      lilygo_device_driver::t_display_p4_air::device::es8389::kSampleRate, 100,
-      20);
+  esp_codec_dev_handle_t input_codec_dev = driver.es8389_input_codec_dev();
+  esp_codec_dev_handle_t output_codec_dev = driver.es8389_output_codec_dev();
+  if ((input_codec_dev == nullptr) || (output_codec_dev == nullptr) ||
+      (!driver.status().es8389.init_flag)) {
+    printf("Es8389 init failed\n");
+    return;
+  }
+
+  auto buffer = std::make_unique<int16_t[]>(kAudioBufferSampleCount);
 
   while (1) {
     if (BootKeyPressed()) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("play_audio start\n");
-      esp_codec_dev_write(codec_dev, (uint8_t*)c2_b16_s44100,
-          sizeof(c2_b16_s44100));
+      int ret = esp_codec_dev_write(output_codec_dev,
+                                    const_cast<uint16_t*>(c2_b16_s44100),
+                                    sizeof(c2_b16_s44100));
+      if (ret != ESP_CODEC_DEV_OK) {
+        printf("esp_codec_dev_write failed (error code: %#X)\n", ret);
+      }
       printf("play_audio finish\n");
     }
 
-    auto buffer = std::make_unique<int16_t[]>(1024);
-    esp_codec_dev_read(codec_dev, buffer.get(), 1024 * sizeof(int16_t));
-    esp_codec_dev_write(codec_dev, buffer.get(), 1024 * sizeof(int16_t));
+    int ret = esp_codec_dev_read(input_codec_dev, buffer.get(),
+                                 kAudioBufferSampleCount * sizeof(int16_t));
+    if (ret != ESP_CODEC_DEV_OK) {
+      printf("esp_codec_dev_read failed (error code: %#X)\n", ret);
+      continue;
+    }
 
-    vTaskDelay(pdMS_TO_TICKS(10));
+    ret = esp_codec_dev_write(output_codec_dev, buffer.get(),
+                              kAudioBufferSampleCount * sizeof(int16_t));
+    if (ret != ESP_CODEC_DEV_OK) {
+      printf("esp_codec_dev_write failed (error code: %#X)\n", ret);
+    }
   }
 }
