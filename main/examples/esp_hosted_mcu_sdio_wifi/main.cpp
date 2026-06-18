@@ -2,142 +2,28 @@
  * @Description: esp_hosted_mcu_sdio_wifi
  * @Author: LILYGO_L
  * @Date: 2025-09-30 14:21:42
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 15:11:36
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
 
 #include <algorithm>
+#include <cstring>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
+#include "esp_event.h"
 #include "esp_hosted.h"
-#include "esp_wifi_remote.h"
-
-extern "C" {
-#include "esp_hosted_transport_config.h"
-}
-
-#define WIFI_SSID "xinyuandianzi_AX_Wi-Fi5"
-#define WIFI_PASSWORD "AA15994823428"
+#include "esp_wifi.h"
 
 namespace {
 
-typedef enum {
-  TRANSPORT_CONFIG_STATUS_UNINITIALIZED = 0,
-  TRANSPORT_CONFIG_STATUS_CONFIGURED,
-  TRANSPORT_CONFIG_STATUS_ACTIVE,
-  TRANSPORT_CONFIG_STATUS_ERROR
-} transport_config_status_t;
-
-typedef struct {
-  transport_config_status_t status;
-  esp_hosted_transport_err_t last_error;
-} transport_config_context_t;
-
-transport_config_context_t g_transport_context = {
-    .status = TRANSPORT_CONFIG_STATUS_UNINITIALIZED,
-    .last_error = ESP_TRANSPORT_OK,
-};
+constexpr char kWifiSsid[] = "LilyGo-AABB-5G";
+constexpr char kWifiPassword[] = "xinyuandianzi";
 
 bool g_wifi_scan_success_flag = false;
-
-void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  auto& xl9535 = driver.chip().xl9535;
-  xl9535->GpioWrite(lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      0);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-}
-
-esp_err_t ValidateTransportConfiguration() {
-  printf("validating transport configuration...\n");
-
-  struct esp_hosted_transport_config* config = nullptr;
-  esp_hosted_transport_err_t result = esp_hosted_transport_get_config(&config);
-  if (result != ESP_TRANSPORT_OK || config == nullptr) {
-    printf("configuration validation failed: cannot retrieve config\n");
-    return ESP_FAIL;
-  }
-
-  if (config->transport_in_use < 1 || config->transport_in_use > 4) {
-    printf("invalid transport type: %d\n", config->transport_in_use);
-    return ESP_FAIL;
-  }
-
-  printf("transport configuration validation passed\n");
-  return ESP_OK;
-}
-
-void DisplayTransportConfiguration() {
-  printf("retrieving current transport configuration...\n");
-
-  struct esp_hosted_transport_config* config = nullptr;
-  esp_hosted_transport_err_t result = esp_hosted_transport_get_config(&config);
-  if (result != ESP_TRANSPORT_OK || config == nullptr) {
-    printf("failed to retrieve transport configuration: error %d\n", result);
-    return;
-  }
-
-  printf("current transport configuration:\n");
-  printf("  transport type: %d\n", config->transport_in_use);
-
-  switch (config->transport_in_use) {
-    case 1:
-      printf("  sdio configuration:\n");
-      printf("    clock frequency: %lu khz\n", config->u.sdio.clock_freq_khz);
-      printf("    bus width: %d bits\n", config->u.sdio.bus_width);
-      printf("    queue sizes - tx: %d, rx: %d\n",
-          config->u.sdio.tx_queue_size, config->u.sdio.rx_queue_size);
-      break;
-    case 2:
-      printf("  spi half-duplex configuration:\n");
-      printf("    clock frequency: %lu mhz\n", config->u.spi_hd.clk_mhz);
-      printf("    data lines: %d\n", config->u.spi_hd.num_data_lines);
-      printf("    checksum: %s\n",
-          config->u.spi_hd.checksum_enable ? "enabled" : "disabled");
-      break;
-    case 3:
-      printf("  spi full-duplex configuration:\n");
-      printf("    clock frequency: %lu mhz\n", config->u.spi.clk_mhz);
-      printf("    spi mode: %d\n", config->u.spi.mode);
-      printf("    queue sizes - tx: %d, rx: %d\n", config->u.spi.tx_queue_size,
-          config->u.spi.rx_queue_size);
-      break;
-    case 4:
-      printf("  uart configuration:\n");
-      printf("    baud rate: %lu bps\n", config->u.uart.baud_rate);
-      printf("    uart port: %d\n", config->u.uart.port);
-      printf("    checksum: %s\n",
-          config->u.uart.checksum_enable ? "enabled" : "disabled");
-      break;
-    default:
-      printf("  unknown transport type: %d\n", config->transport_in_use);
-      break;
-  }
-}
-
-esp_err_t InitializeEspHostedSimple() {
-  printf("initializing esp-hosted...\n");
-
-  esp_err_t result = esp_hosted_init();
-  if (result == ESP_OK) {
-    printf("esp-hosted initialized successfully\n");
-    g_transport_context.status = TRANSPORT_CONFIG_STATUS_ACTIVE;
-  } else {
-    printf("esp-hosted initialization failed: %s\n", esp_err_to_name(result));
-    g_transport_context.status = TRANSPORT_CONFIG_STATUS_ERROR;
-    printf("check transport configuration and slave device connection\n");
-  }
-
-  return result;
-}
+bool g_wifi_connected_flag = false;
 
 void WifiEventHandler(
     void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {
@@ -146,10 +32,12 @@ void WifiEventHandler(
   } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
     ip_event_got_ip_t* event = static_cast<ip_event_got_ip_t*>(event_data);
     printf("got ip: " IPSTR "\n", IP2STR(&event->ip_info.ip));
-    printf("wifi connect success\n");
+    g_wifi_connected_flag = true;
   } else if (event_base == WIFI_EVENT &&
              event_id == WIFI_EVENT_STA_DISCONNECTED) {
-    printf("wifi connect fail\n");
+    printf("wifi disconnected, retrying...\n");
+    g_wifi_connected_flag = false;
+    esp_wifi_connect();
   } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_SCAN_DONE) {
     uint16_t ap_count = 0;
     std::vector<wifi_ap_record_t> ap_info;
@@ -228,15 +116,13 @@ void InitWifiSta() {
     }
   }
 
-  wifi_config_t wifi_config = {
-      .sta =
-          {
-              .ssid = WIFI_SSID,
-              .password = WIFI_PASSWORD,
-          },
-  };
+  wifi_config_t wifi_config = {};
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), kWifiSsid,
+      sizeof(wifi_config.sta.ssid) - 1);
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.password),
+      kWifiPassword, sizeof(wifi_config.sta.password) - 1);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-  esp_wifi_connect();
+  ESP_ERROR_CHECK(esp_wifi_connect());
 }
 
 }  // namespace
@@ -246,32 +132,23 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  ResetEsp32c5(driver);
 
-  printf("esp-hosted transport configuration example\n");
-  printf("========================================\n");
+  // driver.SetUartTarget(
+  //     lilygo_device_driver::TDisplayP4AirDriver::UartTarget::kEsp32c5);
+  // driver.EnterEsp32c5DownloadMode();
+  // while (1) {
+  //   vTaskDelay(pdMS_TO_TICKS(1000));
+  // }
 
-  if (ValidateTransportConfiguration() != ESP_OK) {
-    printf("transport configuration validation failed\n");
-    return;
+  esp_err_t result = esp_hosted_init();
+  if (result != ESP_OK) {
+    printf("esp_hosted_init failed: %s\n", esp_err_to_name(result));
   }
-
-  DisplayTransportConfiguration();
-  printf("========================================\n");
-
-  if (InitializeEspHostedSimple() == ESP_OK) {
-    printf("wifi and bluetooth functionality is now available\n");
-    DisplayTransportConfiguration();
-    printf("========================================\n");
-  } else {
-    printf("esp-hosted initialization failed\n");
-  }
-
-  printf("application running - transport status: %s\n",
-      g_transport_context.status == TRANSPORT_CONFIG_STATUS_ACTIVE ? "active"
-                                                                   : "error");
 
   InitWifiSta();
+  while (!g_wifi_connected_flag) {
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
 
   while (1) {
     vTaskDelay(pdMS_TO_TICKS(10));

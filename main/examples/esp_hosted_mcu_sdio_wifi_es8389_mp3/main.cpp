@@ -2,7 +2,7 @@
  * @Description: esp_hosted_mcu_sdio_wifi_es8389_mp3
  * @Author: LILYGO_L
  * @Date: 2026-02-26 10:39:24
- * @LastEditTime: 2026-06-18 14:36:25
+ * @LastEditTime: 2026-06-18 15:32:08
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -18,11 +18,14 @@
 #include "esp_http_client.h"
 #include "esp_wifi.h"
 
-#define WIFI_SSID "LilyGo-AABB-5G"
-#define WIFI_PASSWORD "xinyuandianzi"
-#define DOWNLOAD_URL "https://s9.imslp.org/files/imglnks/usimg/b/ba/IMSLP479619-PMLP02312-Nocturne,_Op.9_No.2_in_E-flat_major_Aya_Higuchi.mp3"
-
 namespace {
+
+constexpr char kWifiSsid[] = "LilyGo-AABB-5G";
+constexpr char kWifiPassword[] = "xinyuandianzi";
+constexpr char kDownloadUrl[] =
+    "https://s9.imslp.org/files/imglnks/usimg/b/ba/"
+    "IMSLP479619-PMLP02312-Nocturne,_Op.9_No.2_in_E-flat_major_Aya_"
+    "Higuchi.mp3";
 
 bool g_wifi_connected_flag = false;
 esp_codec_dev_handle_t g_codec_dev = nullptr;
@@ -76,10 +79,10 @@ size_t ReadPrefixAndSkipId3v2(
 }
 
 void HttpStreamPlayTask(void* pv_parameters) {
-  printf("starting stream playback: %s\n", DOWNLOAD_URL);
+  printf("starting stream playback: %s\n", kDownloadUrl);
 
   esp_http_client_config_t config = {
-      .url = DOWNLOAD_URL,
+      .url = kDownloadUrl,
       .timeout_ms = 15000,
       .crt_bundle_attach = esp_crt_bundle_attach,
   };
@@ -220,13 +223,11 @@ void InitWifiSta() {
       IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiEventHandler, NULL, NULL));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-  wifi_config_t wifi_config = {
-      .sta =
-          {
-              .ssid = WIFI_SSID,
-              .password = WIFI_PASSWORD,
-          },
-  };
+  wifi_config_t wifi_config = {};
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), kWifiSsid,
+      sizeof(wifi_config.sta.ssid) - 1);
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.password),
+      kWifiPassword, sizeof(wifi_config.sta.password) - 1);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 }

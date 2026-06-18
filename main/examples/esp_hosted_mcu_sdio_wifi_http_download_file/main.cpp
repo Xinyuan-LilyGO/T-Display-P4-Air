@@ -2,11 +2,12 @@
  * @Description: esp_hosted_mcu_sdio_wifi_http_download_file
  * @Author: LILYGO_L
  * @Date: 2026-02-09 16:54:46
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-18 15:32:37
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
 
+#include <cstring>
 #include <memory>
 
 #include "esp_crt_bundle.h"
@@ -15,39 +16,24 @@
 #include "esp_http_client.h"
 #include "esp_wifi.h"
 
-#define WIFI_SSID "xinyuandianzi_AX_Wi-Fi5"
-#define WIFI_PASSWORD "AA15994823428"
-#define DOWNLOAD_URL "https://dldir1.qq.com/qqfile/qq/PCQQ9.7.17/QQ9.7.17.29225.exe"
-
 namespace {
 
-bool g_wifi_connected_flag = false;
+constexpr char kWifiSsid[] = "LilyGo-AABB-5G";
+constexpr char kWifiPassword[] = "xinyuandianzi";
+constexpr char kDownloadUrl[] =
+    "https://cd001.www.duba.net/duba/install/packages/ever/kinsthomeui_150_15.exe";
 
-void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  auto& xl9535 = driver.chip().xl9535;
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      0);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-}
+bool g_wifi_connected_flag = false;
 
 uint32_t GetSystemTimeMs() {
   return static_cast<uint32_t>(esp_timer_get_time() / 1000);
 }
 
 void DownloadTask(void* pv_parameters) {
-  printf("starting download from: %s\n", DOWNLOAD_URL);
+  printf("starting download from: %s\n", kDownloadUrl);
 
   esp_http_client_config_t config = {
-      .url = DOWNLOAD_URL,
+      .url = kDownloadUrl,
       .timeout_ms = 10000,
       .crt_bundle_attach = esp_crt_bundle_attach,
   };
@@ -139,13 +125,11 @@ void InitWifiSta() {
       IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiEventHandler, NULL, NULL));
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
-  wifi_config_t wifi_config = {
-      .sta =
-          {
-              .ssid = WIFI_SSID,
-              .password = WIFI_PASSWORD,
-          },
-  };
+  wifi_config_t wifi_config = {};
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.ssid), kWifiSsid,
+      sizeof(wifi_config.sta.ssid) - 1);
+  std::strncpy(reinterpret_cast<char*>(wifi_config.sta.password),
+      kWifiPassword, sizeof(wifi_config.sta.password) - 1);
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
 }
@@ -157,7 +141,13 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  ResetEsp32c5(driver);
+
+  // driver.SetUartTarget(
+  //     lilygo_device_driver::TDisplayP4AirDriver::UartTarget::kEsp32c5);
+  // driver.EnterEsp32c5DownloadMode();
+  // while (1) {
+  //   vTaskDelay(pdMS_TO_TICKS(1000));
+  // }
 
   esp_err_t result = esp_hosted_init();
   if (result != ESP_OK) {
