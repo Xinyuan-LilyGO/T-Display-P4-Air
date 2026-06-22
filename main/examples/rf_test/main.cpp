@@ -2,7 +2,7 @@
  * @Description: rf_test
  * @Author: LILYGO_L
  * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-05-24 16:30:00
+ * @LastEditTime: 2026-06-22 11:13:13
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -20,22 +20,6 @@ namespace {
 
 LR1121* g_lr1121 = nullptr;
 std::shared_ptr<cpp_bus_driver::HardwareUart> g_nrf9151_uart;
-
-void ResetEsp32c5(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  auto& xl9535 = driver.chip().xl9535;
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      0);
-  vTaskDelay(pdMS_TO_TICKS(100));
-  xl9535->GpioWrite(
-      lilygo_device_driver::t_display_p4_air::gpio::xl9535::kEsp32c5En,
-      1);
-  vTaskDelay(pdMS_TO_TICKS(100));
-}
 
 int16_t Lr1121TransmitTest(float freq, float bw, int8_t pwr) {
   int16_t status = g_lr1121->setFrequency(freq);
@@ -288,7 +272,6 @@ extern "C" void app_main(void) {
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  ResetEsp32c5(driver);
 
   ConfigLr1121(driver);
   g_nrf9151_uart = driver.bus().nrf9151_uart_bus;
