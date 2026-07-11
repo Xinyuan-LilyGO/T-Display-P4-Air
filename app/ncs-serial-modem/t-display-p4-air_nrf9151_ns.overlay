@@ -1,0 +1,84 @@
+// T-Display-P4-Air nRF9151 硬件适配配置。
+// 本文件位于上游 ncs-serial-modem Git 组件之外，
+// 并覆盖在 nrf9151dk/nrf9151/ns 基础板目标之上。
+
+/ {
+	chosen {
+		// 开发板使用普通 UARTE0 通信，不使用 DTR 或 RI。
+		ncs,sm-uart = &uart0;
+
+		// nRF9151 未连接外部 SPI NOR Flash，删除基础板的外部 Flash 选择。
+		/delete-property/ nordic,pm-ext-flash;
+	};
+};
+
+// nRF9151（U17）与 ESP32-P4（U9）的 UART 网络连接：
+// P0.27 UART_TX  -> GPIO22
+// P0.26 UART_RX  <- GPIO23
+// P0.14 UART_RTS -> GPIO20
+// P0.15 UART_CTS <- GPIO21
+&pinctrl {
+	t_display_p4_air_uart0_default: t_display_p4_air_uart0_default {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 0, 27)>,
+				<NRF_PSEL(UART_RTS, 0, 14)>;
+		};
+
+		group2 {
+			psels = <NRF_PSEL(UART_RX, 0, 26)>,
+				<NRF_PSEL(UART_CTS, 0, 15)>;
+			bias-pull-up;
+		};
+	};
+
+	t_display_p4_air_uart0_sleep: t_display_p4_air_uart0_sleep {
+		group1 {
+			psels = <NRF_PSEL(UART_TX, 0, 27)>,
+				<NRF_PSEL(UART_RX, 0, 26)>,
+				<NRF_PSEL(UART_RTS, 0, 14)>,
+				<NRF_PSEL(UART_CTS, 0, 15)>;
+			low-power-enable;
+		};
+	};
+};
+
+&uart0 {
+	compatible = "nordic,nrf-uarte";
+	current-speed = <115200>;
+	hw-flow-control;
+	status = "okay";
+	pinctrl-0 = <&t_display_p4_air_uart0_default>;
+	pinctrl-1 = <&t_display_p4_air_uart0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// 禁用上游 DK 应用 overlay 创建的 DTR/RI UART 包装设备。
+&dtr_uart0 {
+	status = "disabled";
+};
+
+// 删除仅用于 DK 上 P0.8 DTR 引脚的边沿检测配置。
+&gpio0 {
+	/delete-property/ sense-edge-mask;
+};
+
+// 禁用从 nRF9151 DK 继承、但本开发板未使用的外设。
+&uart1 {
+	status = "disabled";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&pwm0 {
+	status = "disabled";
+};
+
+&gd25wb256 {
+	status = "disabled";
+};
+
+&spi3 {
+	status = "disabled";
+};
