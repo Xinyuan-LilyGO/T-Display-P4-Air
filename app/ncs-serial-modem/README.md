@@ -183,6 +183,22 @@ can stall even when TX and RX are connected correctly.
 After reset, Serial Modem sends `Ready\r\n` when initialization completes.
 Send `AT\r` and expect an `OK` response.
 
+## 9. Raw GNSS NMEA output
+
+This fork adds `AT#XGNSSNMEA` for forwarding unmodified GGA, GLL, RMC, GSA,
+and GSV sentences through the AT UART. Enable it before starting GNSS:
+
+```text
+AT+CFUN=0
+AT%XSYSTEMMODE=0,0,1,0
+AT+CFUN=31
+AT#XGNSSNMEA=1
+AT#XGNSS=1,0,1
+```
+
+The output retains the leading `$`, checksum, and `\r\n`. Stop the stream with
+`AT#XGNSSNMEA=0`, and use `AT#XGNSSNMEA?` to query its state.
+
 ## Configuration limitations
 
 - DTR/RI UART power management and DTR wake-up are unavailable.

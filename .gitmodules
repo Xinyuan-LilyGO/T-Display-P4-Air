@@ -18,4 +18,4 @@
 	url = https://github.com/Llgok/radiolib_cpp_bus_driver.git
 [submodule "app/ncs-serial-modem/ncs-serial-modem"]
 	path = app/ncs-serial-modem/ncs-serial-modem
-	url = https://github.com/nrfconnect/ncs-serial-modem.git
+	url = https://github.com/Llgok/ncs-serial-modem.git

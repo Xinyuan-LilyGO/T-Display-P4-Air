@@ -2,17 +2,21 @@
  * @Description: rf_test
  * @Author: LILYGO_L
  * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-07-11 17:18:02
+ * @LastEditTime: 2026-07-14 14:47:26
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
 
+#include <atomic>
+#include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
 
 #include "esp_hosted.h"
+#include "esp_log.h"
 #include "esp_wifi.h"
 #include "st25r3916_driver.h"
 
@@ -23,12 +27,12 @@ cpp_bus_driver::Nrf9151* g_nrf9151 = nullptr;
 std::shared_ptr<cpp_bus_driver::HardwareUart> g_nrf9151_uart;
 TaskHandle_t g_nrf9151_task_handle = nullptr;
 TaskHandle_t g_nrf9151_button_task_handle = nullptr;
+std::atomic_bool g_nrf9151_nmea_passthrough{false};
 
 constexpr TickType_t kLr1121FrequencyHoldTicks = pdMS_TO_TICKS(500);
 constexpr TickType_t kLr1121FrequencyRestTicks = pdMS_TO_TICKS(1000);
 constexpr uint32_t kNrf9151CommandTimeoutMs = 5000;
-constexpr uint32_t kNrf9151GnssPollTimeMs = 1000;
-constexpr uint32_t kNrf9151GnssProgressReportMs = 3000;
+constexpr size_t kNrf9151NmeaBufferLimit = 4096;
 constexpr TickType_t kNrf9151LteTransmitTicks = pdMS_TO_TICKS(5000);
 constexpr TickType_t kNrf9151LteRestTicks = pdMS_TO_TICKS(1000);
 constexpr TickType_t kNrf9151ButtonPollTicks = pdMS_TO_TICKS(10);
@@ -52,6 +56,52 @@ constexpr Nrf9151LteTestConfig kNrf9151LteTestConfigs[] = {
     {"B3, 1745.0 mhz", "AT%XRFTEST=1,1,3,17450,23"},
     {"B1, 1950.0 mhz", "AT%XRFTEST=1,1,1,19500,23"},
 };
+
+/**
+ * @brief 输出射频测试日志，GNSS 原始数据直通期间自动丢弃日志
+ * @param format printf 格式字符串
+ * @return 实际输出的字符数，静默期间返回 0
+ */
+int RfTestLog(const char* format, ...)
+    __attribute__((format(printf, 1, 2)));
+int RfTestLog(const char* format, ...) {
+  if (g_nrf9151_nmea_passthrough.load(std::memory_order_acquire)) {
+    return 0;
+  }
+
+  va_list args;
+  va_start(args, format);
+  int result = vprintf(format, args);
+  va_end(args);
+  return result;
+}
+
+/**
+ * @brief 控制 ESP-IDF 日志输出，避免 GNSS 原始数据中混入系统日志
+ * @param format vprintf 格式字符串
+ * @param args 可变参数列表
+ * @return 实际输出的字符数，静默期间返回 0
+ */
+int RfTestEspLogVprintf(const char* format, va_list args) {
+  if (g_nrf9151_nmea_passthrough.load(std::memory_order_acquire)) {
+    return 0;
+  }
+  return vprintf(format, args);
+}
+
+/**
+ * @brief 设置 nRF9151 NMEA 原始数据直通状态
+ * @param enabled true 表示仅输出 NMEA，false 表示恢复普通日志
+ */
+void SetNrf9151NmeaPassthrough(bool enabled) {
+  if (enabled) {
+    fflush(stdout);
+  }
+  g_nrf9151_nmea_passthrough.store(enabled, std::memory_order_release);
+}
+
+// 将本文件的 printf 统一接入 GNSS 静默控制。
+#define printf(...) RfTestLog(__VA_ARGS__)
 
 int16_t Lr1121TransmitTest(float freq, float bw, int8_t pwr) {
   int16_t status = g_lr1121->setFrequency(freq);
@@ -251,36 +301,49 @@ bool SendNrf9151Command(const char* command) {
   return result == cpp_bus_driver::Nrf9151::CommandResult::kOk;
 }
 
-bool CollectNrf9151GnssOutput(uint32_t duration_ms) {
-  bool received_position = false;
-  TickType_t start_ticks = xTaskGetTickCount();
-
-  while ((xTaskGetTickCount() - start_ticks) < pdMS_TO_TICKS(duration_ms)) {
-    size_t read_length = g_nrf9151_uart->GetRxBufferLength();
-    if (read_length == 0) {
-      vTaskDelay(pdMS_TO_TICKS(20));
-      continue;
-    }
-
-    std::vector<uint8_t> buffer(read_length + 1, 0);
-    int32_t bytes_read = g_nrf9151_uart->Read(
-        buffer.data(), static_cast<uint32_t>(read_length));
-    if (bytes_read <= 0) {
-      printf("nrf9151 gnss uart read failed\n");
-      vTaskDelay(pdMS_TO_TICKS(20));
-      continue;
-    }
-
-    std::string output(
-        reinterpret_cast<char*>(buffer.data()), static_cast<size_t>(bytes_read));
-    received_position =
-        received_position || output.find("#XGNSS:") != std::string::npos;
-    printf("nrf9151 gnss output(size: %ld): [%.*s]\n",
-        static_cast<long>(bytes_read), static_cast<int>(bytes_read),
-        output.c_str());
+/**
+ * @brief 重组 UART 分片并将完整 NMEA 语句原样输出到主串口
+ * @param pending_data 用于保存尚未接收完整的 UART 数据
+ */
+void ForwardNrf9151NmeaOutput(std::string* pending_data) {
+  const size_t read_length = g_nrf9151_uart->GetRxBufferLength();
+  if (read_length == 0) {
+    vTaskDelay(pdMS_TO_TICKS(20));
+    return;
   }
 
-  return received_position;
+  std::vector<uint8_t> buffer(read_length);
+  const int32_t bytes_read = g_nrf9151_uart->Read(
+      buffer.data(), static_cast<uint32_t>(buffer.size()));
+  if (bytes_read <= 0) {
+    vTaskDelay(pdMS_TO_TICKS(20));
+    return;
+  }
+
+  pending_data->append(reinterpret_cast<const char*>(buffer.data()),
+      static_cast<size_t>(bytes_read));
+  while (true) {
+    const size_t line_end = pending_data->find('\n');
+    if (line_end == std::string::npos) {
+      break;
+    }
+
+    const size_t line_length = line_end + 1;
+    if (!pending_data->empty() && pending_data->front() == '$') {
+      fwrite(pending_data->data(), 1, line_length, stdout);
+      fflush(stdout);
+    }
+    pending_data->erase(0, line_length);
+  }
+
+  if (pending_data->size() > kNrf9151NmeaBufferLimit) {
+    const size_t nmea_start = pending_data->rfind('$');
+    if (nmea_start == std::string::npos) {
+      pending_data->clear();
+    } else {
+      pending_data->erase(0, nmea_start);
+    }
+  }
 }
 
 void Nrf9151ButtonTask(void* arg) {
@@ -396,42 +459,25 @@ void Nrf9151AtTask(void* arg) {
     if (!SendNrf9151Command("AT+CFUN=0") ||
         !SendNrf9151Command("AT%XSYSTEMMODE=0,0,1,0") ||
         !SendNrf9151Command("AT+CFUN=31") ||
+        !SendNrf9151Command("AT#XGNSSNMEA=1") ||
         !SendNrf9151Command("AT#XGNSS=1,0,1")) {
       printf("nrf9151 gnss test start failed\n");
+      SendNrf9151Command("AT#XGNSSNMEA=0");
+      SendNrf9151Command("AT#XGNSS=0");
       vTaskDelay(pdMS_TO_TICKS(1000));
       continue;
     }
 
     printf("nrf9151 test mode: gnss, press boot button to switch to lte\n");
-    TickType_t gnss_start_ticks = xTaskGetTickCount();
-    bool received_first_position = false;
-    uint32_t next_progress_report_ms = kNrf9151GnssProgressReportMs;
-    printf("nrf9151 gnss waiting for first position\n");
+    std::string pending_nmea_data;
+    SetNrf9151NmeaPassthrough(true);
     while (!IsNrf9151ModeSwitchRequested()) {
-      bool received_position =
-          CollectNrf9151GnssOutput(kNrf9151GnssPollTimeMs);
-      uint32_t elapsed_ms = pdTICKS_TO_MS(xTaskGetTickCount() -
-          gnss_start_ticks);
-      if (!received_first_position && elapsed_ms >= next_progress_report_ms) {
-        printf("nrf9151 gnss acquiring, elapsed: %.3f s\n",
-            static_cast<double>(elapsed_ms) / 1000.0);
-        next_progress_report_ms += kNrf9151GnssProgressReportMs;
-      }
-      if (!received_first_position && received_position) {
-        received_first_position = true;
-        printf("nrf9151 gnss first position acquired after %.3f s\n",
-            static_cast<double>(elapsed_ms) / 1000.0);
-      }
+      ForwardNrf9151NmeaOutput(&pending_nmea_data);
     }
 
-    if (!received_first_position) {
-      uint32_t elapsed_ms = pdTICKS_TO_MS(xTaskGetTickCount() -
-          gnss_start_ticks);
-      printf("nrf9151 gnss stopped without position after %.3f s\n",
-          static_cast<double>(elapsed_ms) / 1000.0);
-    }
-
+    SendNrf9151Command("AT#XGNSSNMEA=0");
     SendNrf9151Command("AT#XGNSS=0");
+    SetNrf9151NmeaPassthrough(false);
     SendNrf9151Command("AT+CFUN=0");
     SendNrf9151Command("AT%XSYSTEMMODE=1,0,0,0");
     test_mode = Nrf9151TestMode::kLte;
@@ -451,6 +497,7 @@ void ConfigLr1121(lilygo_device_driver::TDisplayP4AirDriver& driver) {
 }  // namespace
 
 extern "C" void app_main(void) {
+  esp_log_set_vprintf(RfTestEspLogVprintf);
   printf("Ciallo\n");
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();

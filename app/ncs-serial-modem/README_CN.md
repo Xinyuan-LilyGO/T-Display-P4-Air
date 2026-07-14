@@ -176,6 +176,22 @@ UART 参数：
 复位后，Serial Modem 初始化完成时会发送 `Ready\r\n`。发送 `AT\r`，应收到
 `OK` 响应。
 
+## 9. 输出原始 GNSS NMEA
+
+本 fork 新增 `AT#XGNSSNMEA`，用于通过 AT UART 原样输出 GGA、GLL、RMC、GSA
+和 GSV 语句。必须在启动 GNSS 前开启：
+
+```text
+AT+CFUN=0
+AT%XSYSTEMMODE=0,0,1,0
+AT+CFUN=31
+AT#XGNSSNMEA=1
+AT#XGNSS=1,0,1
+```
+
+输出会保留 `$`、校验和及 `\r\n`。使用 `AT#XGNSSNMEA=0` 停止输出，使用
+`AT#XGNSSNMEA?` 查询当前状态。
+
 ## 当前配置的限制
 
 - 不支持 DTR/RI UART 电源管理和 DTR 唤醒。
