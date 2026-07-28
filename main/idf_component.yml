@@ -15,7 +15,7 @@ dependencies:
     override_path: "../libraries/lilygo_device_driver"
 
   usp_cpp_bus_driver:
-    override_path: "../app/lilygo_device_driver_example/libraries/usp_cpp_bus_driver"
+    override_path: "../libraries/usp_cpp_bus_driver"
     matches:
       - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_GLASSES_P4} == True"
       - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_DISPLAY_P4} == True"

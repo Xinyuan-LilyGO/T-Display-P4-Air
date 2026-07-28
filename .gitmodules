@@ -4,15 +4,9 @@
 [submodule "libraries/cpp_bus_driver"]
 	path = libraries/cpp_bus_driver
 	url = https://github.com/Llgok/cpp_bus_driver.git
-[submodule "app/ncs-serial-modem/ncs-serial-modem"]
-	path = app/ncs-serial-modem/ncs-serial-modem
+[submodule "apps/ncs-serial-modem/ncs-serial-modem"]
+	path = apps/ncs-serial-modem/ncs-serial-modem
 	url = https://github.com/Llgok/ncs-serial-modem.git
-[submodule "app/lilygo_device_driver_example"]
-	path = app/lilygo_device_driver_example
-	url = https://github.com/Xinyuan-LilyGO/lilygo_device_driver_example.git
-[submodule "app/lilygobox-espidf"]
-	path = app/lilygobox-espidf
-	url = https://github.com/Xinyuan-LilyGO/lilygobox-espidf.git
 [submodule "libraries/stsw-st25rfal002_cpp_bus_driver"]
 	path = libraries/stsw-st25rfal002_cpp_bus_driver
 	url = https://github.com/Llgok/stsw-st25rfal002_cpp_bus_driver.git
