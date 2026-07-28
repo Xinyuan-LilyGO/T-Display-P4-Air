@@ -17,7 +17,7 @@
 #include "esp_audio_dec_default.h"
 #include "esp_codec_dev.h"
 
-namespace private_library {
+namespace common {
 namespace mp3 {
 
 inline bool OpenCodec(esp_codec_dev_handle_t codec_dev, uint32_t sample_rate) {
@@ -390,4 +390,4 @@ inline void PlayFile(const char* path, esp_codec_dev_handle_t codec_dev,
 }
 
 }  // namespace mp3
-}  // namespace private_library
+}  // namespace common

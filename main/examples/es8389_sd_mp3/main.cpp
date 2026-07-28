@@ -62,7 +62,7 @@ extern "C" void app_main(void) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("play_mp3 start\n");
-      private_library::mp3::PlayFile(
+      common::mp3::PlayFile(
           kMp3FilePath, output_codec_dev, &audio_sample_rate);
       printf("play_mp3 finish\n");
     }

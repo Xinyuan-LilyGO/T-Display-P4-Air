@@ -66,7 +66,7 @@ size_t ReadPrefixAndSkipId3v2(
 
   uint8_t major_version = header[3];
   uint8_t flags = header[5];
-  uint32_t tag_size = private_library::mp3::SynchsafeToUint32(
+  uint32_t tag_size = common::mp3::SynchsafeToUint32(
       header + 6);
   printf("id3v2.%d tag detected, flags: 0x%02x, size: %lu bytes\n",
       major_version, flags, static_cast<unsigned long>(tag_size));

@@ -4,18 +4,18 @@
 [submodule "libraries/cpp_bus_driver"]
 	path = libraries/cpp_bus_driver
 	url = https://github.com/Llgok/cpp_bus_driver.git
-[submodule "libraries/arduino_cpp_bus_driver"]
-	path = libraries/arduino_cpp_bus_driver
-	url = https://github.com/Llgok/arduino_cpp_bus_driver.git
-[submodule "libraries/ST25R3916"]
-	path = libraries/ST25R3916
-	url = https://github.com/Llgok/ST25R3916.git
-[submodule "libraries/NFC-RFAL"]
-	path = libraries/NFC-RFAL
-	url = https://github.com/Llgok/NFC-RFAL.git
-[submodule "libraries/radiolib_cpp_bus_driver"]
-	path = libraries/radiolib_cpp_bus_driver
-	url = https://github.com/Llgok/radiolib_cpp_bus_driver.git
 [submodule "app/ncs-serial-modem/ncs-serial-modem"]
 	path = app/ncs-serial-modem/ncs-serial-modem
 	url = https://github.com/Llgok/ncs-serial-modem.git
+[submodule "app/lilygo_device_driver_example"]
+	path = app/lilygo_device_driver_example
+	url = https://github.com/Xinyuan-LilyGO/lilygo_device_driver_example.git
+[submodule "app/lilygobox-espidf"]
+	path = app/lilygobox-espidf
+	url = https://github.com/Xinyuan-LilyGO/lilygobox-espidf.git
+[submodule "libraries/stsw-st25rfal002_cpp_bus_driver"]
+	path = libraries/stsw-st25rfal002_cpp_bus_driver
+	url = https://github.com/Llgok/stsw-st25rfal002_cpp_bus_driver.git
+[submodule "libraries/usp_cpp_bus_driver"]
+	path = libraries/usp_cpp_bus_driver
+	url = https://github.com/Llgok/usp_cpp_bus_driver.git

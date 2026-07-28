@@ -1,143 +1,165 @@
 /*
- * @Description: bhi260ap
+ * @Description: 使用 BHI2xy SensorAPI 桥接库读取 BHI260AP 四元数
  * @Author: LILYGO_L
- * @Date: 2026-02-27 09:07:56
- * @LastEditTime: 2026-06-16
+ * @Date: 2026-07-15 23:20:00
+ * @LastEditTime: 2026-07-27 14:12:28
  * @License: GPL 3.0
  */
 #include <cmath>
-#include <memory>
+#include <cstdio>
 
+#include "bhi2xy_sensorapi_cpp_bus_driver_library.h"
+#include "bhy2_parse.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "lilygo_device_driver_library.h"
-#include "SensorBHI260AP.hpp"
 
-#define BOSCH_APP30_SHUTTLE_BHI260_FW
-#include "BoschFirmware.h"
+namespace {
 
-float g_accel_data[3] = {0.0f, 0.0f, 0.0f};
-float g_gyro_data[3] = {0.0f, 0.0f, 0.0f};
+using bhi2xy_sensorapi_cpp_bus_driver::Bhi2xy;
 
-bool g_accel_data_ready_flag = false;
-bool g_gyro_data_ready_flag = false;
-int64_t g_cycle_time_ms = 0;
+struct QuaternionData {
+  float x = 0.0f;                 // X轴分量
+  float y = 0.0f;                 // Y轴分量
+  float z = 0.0f;                 // Z轴分量
+  float w = 0.0f;                 // 标量分量
+  float accuracy_degrees = 0.0f;  // 估算精度
+  bool ready = false;             // 新数据标志
+};
 
-auto g_bhi260ap = std::make_unique<SensorBHI260AP>();
+struct EulerAngles {
+  float roll = 0.0f;   // 横滚角
+  float pitch = 0.0f;  // 俯仰角
+  float yaw = 0.0f;    // 偏航角（不使用磁力计，仅表示相对方向）
+};
 
-void CalculateOrientation(const float accel[3], const float gyro[3],
-    float* pitch, float* roll, float* yaw) {
-  *pitch =
-      atan2f(-accel[0], sqrtf(accel[1] * accel[1] + accel[2] * accel[2])) *
-      180.0f / M_PI;
-  *roll = atan2f(accel[1], accel[2]) * 180.0f / M_PI;
+constexpr float kQuaternionScale = 16384.0f;
+constexpr float kRadiansToDegrees = 57.2957795f;
+constexpr float kSampleRateHz = 100.0f;
+constexpr uint32_t kReportLatencyMs = 0;
+constexpr uint32_t kLogIntervalMs = 500;
 
-  static float last_yaw = 0.0f;
-  static int64_t last_time_ms = 0;
-  const int64_t now_ms = esp_timer_get_time() / 1000;
-  const float dt =
-      (last_time_ms == 0) ? 0.01f : (now_ms - last_time_ms) / 1000.0f;
-  last_time_ms = now_ms;
+Bhi2xy* g_bhi260ap = nullptr;
+QuaternionData g_quaternion;
 
-  last_yaw += gyro[2] * dt;
-  *yaw = last_yaw;
+/**
+ * @brief 将四元数转换为便于阅读的欧拉角
+ */
+EulerAngles QuaternionToEuler(const QuaternionData& quaternion) {
+  EulerAngles angles;
+
+  const float sin_roll =
+      2.0f * (quaternion.w * quaternion.x + quaternion.y * quaternion.z);
+  const float cos_roll = 1.0f -
+      2.0f * (quaternion.x * quaternion.x + quaternion.y * quaternion.y);
+  angles.roll = std::atan2(sin_roll, cos_roll) * kRadiansToDegrees;
+
+  const float sin_pitch =
+      2.0f * (quaternion.w * quaternion.y - quaternion.z * quaternion.x);
+  if (std::fabs(sin_pitch) >= 1.0f) {
+    angles.pitch = std::copysign(90.0f, sin_pitch);
+  } else {
+    angles.pitch = std::asin(sin_pitch) * kRadiansToDegrees;
+  }
+
+  const float sin_yaw =
+      2.0f * (quaternion.w * quaternion.z + quaternion.x * quaternion.y);
+  const float cos_yaw = 1.0f -
+      2.0f * (quaternion.y * quaternion.y + quaternion.z * quaternion.z);
+  angles.yaw = std::atan2(sin_yaw, cos_yaw) * kRadiansToDegrees;
+
+  return angles;
 }
 
-bool InitBhi260ap(void) {
-  printf("InitBhi260ap\n");
+/**
+ * @brief 解析游戏旋转矢量FIFO中的四元数数据
+ * @param callback_info Bosch官方API提供的FIFO数据描述
+ */
+void ParseQuaternion(
+    const struct bhy2_fifo_parse_data_info* callback_info, void*) {
+  if (callback_info == nullptr || callback_info->data_ptr == nullptr ||
+      callback_info->data_size != 11) {
+    return;
+  }
 
-  g_bhi260ap->setFirmware(
-      bosch_firmware_image, bosch_firmware_size, bosch_firmware_type, true);
-  g_bhi260ap->setBootFromFlash(bosch_firmware_type);
+  struct bhy2_data_quaternion data{};
+  bhy2_parse_quaternion(callback_info->data_ptr, &data);
+  // Bosch四元数采用Q14定点格式
+  g_quaternion.x = data.x / kQuaternionScale;
+  g_quaternion.y = data.y / kQuaternionScale;
+  g_quaternion.z = data.z / kQuaternionScale;
+  g_quaternion.w = data.w / kQuaternionScale;
+  g_quaternion.accuracy_degrees =
+      data.accuracy / kQuaternionScale * kRadiansToDegrees;
+  g_quaternion.ready = true;
+}
 
+/**
+ * @brief 为已由板级驱动初始化的BHI260AP开启游戏旋转矢量虚拟传感器
+ * @return 配置成功返回 true，失败返回 false
+ */
+bool ConfigureBhi260ap() {
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
-  i2c_master_bus_handle_t i2c_handle = driver.bus().axp517_i2c_bus->bus_handle();
+  if (!driver.IsBhi260apReady()) {
+    const auto* bhi260ap = driver.chip().bhi260ap.get();
+    printf("BHI260AP is not ready (error code: %d)\n",
+        bhi260ap == nullptr ? BHY2_E_NULL_PTR : bhi260ap->last_error());
+    return false;
+  }
+  g_bhi260ap = driver.chip().bhi260ap.get();
+  printf("BHI260AP kernel version: %u\n",
+      static_cast<unsigned>(g_bhi260ap->kernel_version()));
 
-  if (!g_bhi260ap->begin(i2c_handle,
-          lilygo_device_driver::t_display_p4_air::device::bhi260ap::kI2cAddress)) {
-    printf("Bhi260ap begin failed (error code: %s)\n",
-        g_bhi260ap->getError());
+  // 固件启动后先注册回调，再处理初始化事件并更新虚拟传感器列表
+  if (!g_bhi260ap->RegisterFifoCallback(
+          BHY2_SENSOR_ID_GAMERV, ParseQuaternion)) {
+    printf("BHI260AP callback registration failed (error code: %d)\n",
+        g_bhi260ap->last_error());
+    return false;
+  }
+  if (!g_bhi260ap->ProcessFifo() || !g_bhi260ap->UpdateVirtualSensorList()) {
+    printf("BHI260AP sensor list update failed (error code: %d)\n",
+        g_bhi260ap->last_error());
+    return false;
+  }
+  if (!g_bhi260ap->ConfigureSensor(
+          BHY2_SENSOR_ID_GAMERV, kSampleRateHz, kReportLatencyMs)) {
+    printf("BHI260AP sensor configuration failed (error code: %d)\n",
+        g_bhi260ap->last_error());
     return false;
   }
 
-  printf("Bhi260ap begin success\n");
-  BoschSensorInfo info = g_bhi260ap->getSensorInfo();
-  info.printInfo();
-
-  if (!g_bhi260ap->configure(BoschSensorID::ACCEL_PASSTHROUGH, 100.0, 0)) {
-    printf("Bhi260ap accel configure failed (error code: %s)\n",
-        g_bhi260ap->getError());
-    return false;
-  }
-  if (!g_bhi260ap->configure(BoschSensorID::GYRO_PASSTHROUGH, 100.0, 0)) {
-    printf("Bhi260ap gyro configure failed (error code: %s)\n",
-        g_bhi260ap->getError());
-    return false;
-  }
-
-  if (!g_bhi260ap->onResultEvent(BoschSensorID::ACCEL_PASSTHROUGH,
-          [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
-              uint64_t* timestamp, void* user_data) {
-            struct bhy2_data_xyz data;
-            const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
-            bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
-
-            g_accel_data[0] = data.x * scaling_factor;
-            g_accel_data[1] = data.y * scaling_factor;
-            g_accel_data[2] = data.z * scaling_factor;
-            g_accel_data_ready_flag = true;
-          })) {
-    printf("Bhi260ap accel callback register failed (error code: %s)\n",
-        g_bhi260ap->getError());
-    return false;
-  }
-
-  if (!g_bhi260ap->onResultEvent(BoschSensorID::GYRO_PASSTHROUGH,
-          [](uint8_t sensor_id, const uint8_t* data_ptr, uint32_t len,
-              uint64_t* timestamp, void* user_data) {
-            struct bhy2_data_xyz data;
-            const float scaling_factor = g_bhi260ap->getScaling(sensor_id);
-            bhy2_parse_xyz(const_cast<uint8_t*>(data_ptr), &data);
-
-            g_gyro_data[0] = data.x * scaling_factor;
-            g_gyro_data[1] = data.y * scaling_factor;
-            g_gyro_data[2] = data.z * scaling_factor;
-            g_gyro_data_ready_flag = true;
-          })) {
-    printf("Bhi260ap gyro callback register failed (error code: %s)\n",
-        g_bhi260ap->getError());
-    return false;
-  }
-
-  printf("InitBhi260ap success\n");
+  printf("BHI260AP game rotation vector enabled at %.2f Hz\n", kSampleRateHz);
   return true;
 }
 
-extern "C" void app_main(void) {
+}  // namespace
+
+extern "C" void app_main() {
   printf("Ciallo\n");
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
   driver.Init();
-  const bool bhi260ap_ready = InitBhi260ap();
+  const bool bhi260ap_ready = ConfigureBhi260ap();
+  TickType_t last_log_tick = xTaskGetTickCount();
 
-  while (1) {
-    if (bhi260ap_ready) {
-      g_bhi260ap->update();
+  while (true) {
+    // 持续轮询FIFO以避免数据堆积，但仅按设定间隔输出最新姿态
+    if (bhi260ap_ready && !g_bhi260ap->ProcessFifo()) {
+      printf("BHI260AP FIFO processing failed (error code: %d)\n",
+          g_bhi260ap->last_error());
     }
 
-    const int64_t now_ms = esp_timer_get_time() / 1000;
-    if (now_ms > g_cycle_time_ms) {
-      if (g_accel_data_ready_flag && g_gyro_data_ready_flag) {
-        float pitch = 0.0f;
-        float roll = 0.0f;
-        float yaw = 0.0f;
-        CalculateOrientation(g_accel_data, g_gyro_data, &pitch, &roll, &yaw);
-        printf("Orientation: pitch=%.2f, roll=%.2f, yaw=%.2f\n", pitch, roll,
-            yaw);
-
-        g_accel_data_ready_flag = false;
-        g_gyro_data_ready_flag = false;
-      }
-
-      g_cycle_time_ms = now_ms + 1000;
+    const TickType_t now = xTaskGetTickCount();
+    if (g_quaternion.ready &&
+        now - last_log_tick >= pdMS_TO_TICKS(kLogIntervalMs)) {
+      const EulerAngles angles = QuaternionToEuler(g_quaternion);
+      printf(
+          "Orientation: roll=%7.2f deg, pitch=%7.2f deg, "
+          "yaw=%7.2f deg (relative)\n",
+          angles.roll, angles.pitch, angles.yaw);
+      g_quaternion.ready = false;
+      last_log_tick = now;
     }
 
     vTaskDelay(pdMS_TO_TICKS(10));

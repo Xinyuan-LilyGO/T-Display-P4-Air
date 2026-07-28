@@ -2,7 +2,7 @@
  * @Description: rf_test
  * @Author: LILYGO_L
  * @Date: 2026-02-04 11:01:39
- * @LastEditTime: 2026-07-14 14:47:26
+ * @LastEditTime: 2026-07-26 13:02:10
  * @License: GPL 3.0
  */
 #include "lilygo_device_driver_library.h"
@@ -18,11 +18,11 @@
 #include "esp_hosted.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
-#include "st25r3916_driver.h"
+#include "stsw_st25rfal002_cpp_bus_driver_library.h"
 
 namespace {
 
-LR1121* g_lr1121 = nullptr;
+usp_cpp_bus_driver::Lr11xx* g_lr1121 = nullptr;
 cpp_bus_driver::Nrf9151* g_nrf9151 = nullptr;
 std::shared_ptr<cpp_bus_driver::HardwareUart> g_nrf9151_uart;
 TaskHandle_t g_nrf9151_task_handle = nullptr;
@@ -103,42 +103,64 @@ void SetNrf9151NmeaPassthrough(bool enabled) {
 // 将本文件的 printf 统一接入 GNSS 静默控制。
 #define printf(...) RfTestLog(__VA_ARGS__)
 
-int16_t Lr1121TransmitTest(float freq, float bw, int8_t pwr) {
-  int16_t status = g_lr1121->setFrequency(freq);
-  if (status != RADIOLIB_ERR_NONE) {
-    printf("lr1121 setFrequency failed at %.1f mhz (error code: %d)\n", freq,
-        status);
-    return status;
-  }
+bool Lr1121TransmitTest(float freq, float bw, int8_t pwr) {
+  const bool high_frequency = freq > 1000.0F;
+  usp_cpp_bus_driver::Lr11xx::LoraConfig config = {
+      .frequency_hz = static_cast<uint32_t>(freq * 1000000.0F),
+      .modulation =
+          {
+              .sf = LR11XX_RADIO_LORA_SF12,
+              .bw = high_frequency ? LR11XX_RADIO_LORA_BW_400
+                                   : LR11XX_RADIO_LORA_BW_125,
+              .cr = LR11XX_RADIO_LORA_CR_4_7,
+              .ldro = high_frequency ? 0 : 1,
+          },
+      .packet =
+          {
+              .preamble_len_in_symb = 8,
+              .header_type = LR11XX_RADIO_LORA_PKT_EXPLICIT,
+              .pld_len_in_bytes = 255,
+              .crc = LR11XX_RADIO_LORA_CRC_ON,
+              .iq = LR11XX_RADIO_LORA_IQ_STANDARD,
+          },
+      .sync_word = 0x12,
+      .pa =
+          {
+              .pa_sel = high_frequency ? LR11XX_RADIO_PA_SEL_HF
+                                       : LR11XX_RADIO_PA_SEL_HP,
+              .pa_reg_supply = high_frequency
+                                   ? LR11XX_RADIO_PA_REG_SUPPLY_VREG
+                                   : LR11XX_RADIO_PA_REG_SUPPLY_VBAT,
+              .pa_duty_cycle = 0x04,
+              .pa_hp_sel = 0x07,
+          },
+      .output_power_dbm = pwr,
+      .ramp_time = LR11XX_RADIO_RAMP_48_US,
+  };
 
-  status = g_lr1121->setBandwidth(bw, freq > 1000.0);
-  if (status != RADIOLIB_ERR_NONE) {
-    printf("lr1121 setBandwidth failed at %.1f mhz (error code: %d)\n", freq,
-        status);
-    return status;
-  }
-
-  status = g_lr1121->setOutputPower(pwr);
-  if (status != RADIOLIB_ERR_NONE) {
-    printf("lr1121 setOutputPower failed at %.1f mhz (error code: %d)\n",
-        freq, status);
-    return status;
-  }
-
-  status = g_lr1121->transmitDirect();
-  if (status != RADIOLIB_ERR_NONE) {
-    printf("lr1121 continuous wave failed at %.1f mhz (error code: %#X)\n",
-        freq, status);
+  const bool result =
+      g_lr1121->Invoke(lr11xx_system_calibrate_image_in_mhz,
+          static_cast<uint16_t>(freq - 4.0F),
+          static_cast<uint16_t>(freq + 4.0F)) == LR11XX_STATUS_OK &&
+      g_lr1121->Configure(config) &&
+      g_lr1121->Invoke(lr11xx_radio_set_tx_cw) == LR11XX_STATUS_OK;
+  if (!result) {
+    printf("lr1121 continuous wave failed at %.1f mhz\n", freq);
   } else {
-    printf("lr1121 continuous wave: %.1f mhz, %d dbm\n", freq, pwr);
+    printf("lr1121 continuous wave: %.1f mhz, %.2f khz, %d dbm\n", freq, bw,
+        pwr);
   }
 
   // 每个频点保持 500 ms，便于频谱仪稳定捕获并读取功率。
   vTaskDelay(kLr1121FrequencyHoldTicks);
-  g_lr1121->standby();
+  if (g_lr1121->Invoke(
+          lr11xx_system_set_standby, LR11XX_SYSTEM_STANDBY_CFG_RC) !=
+      LR11XX_STATUS_OK) {
+    printf("lr1121 standby failed at %.1f mhz\n", freq);
+  }
   // 关闭发射后等待 1 秒，避免切换到下一频点时仍处于发射状态。
   vTaskDelay(kLr1121FrequencyRestTicks);
-  return status;
+  return result;
 }
 
 void Lr1121RfTask(void* arg) {
@@ -158,16 +180,16 @@ void Lr1121RfTask(void* arg) {
 void St25r3916RfTask(void* arg) {
   printf("St25r3916RfTask start\n");
 
-  ReturnCode status = rfst25r3916.rfalSetMode(
-      RFAL_MODE_POLL_NFCA, RFAL_BR_106, RFAL_BR_106);
-  if (status == ERR_NONE) {
+  ReturnCode status =
+      rfalSetMode(RFAL_MODE_POLL_NFCA, RFAL_BR_106, RFAL_BR_106);
+  if (status == RFAL_ERR_NONE) {
     // RFO 电阻设为 0，使用 ST25R3916 的最大射频驱动能力。
-    status = rfst25r3916.rfalChipSetRFO(0);
+    status = rfalChipSetRFO(0);
   }
-  if (status == ERR_NONE) {
-    status = rfst25r3916.rfalFieldOnAndStartGT();
+  if (status == RFAL_ERR_NONE) {
+    status = rfalFieldOnAndStartGT();
   }
-  if (status != ERR_NONE) {
+  if (status != RFAL_ERR_NONE) {
     printf("st25r3916 13.56 mhz field start failed (error code: %d)\n",
         status);
     vTaskDelete(nullptr);
@@ -491,7 +513,7 @@ void ConfigLr1121(lilygo_device_driver::TDisplayP4AirDriver& driver) {
     return;
   }
 
-  g_lr1121 = driver.chip().lr1121;
+  g_lr1121 = driver.chip().lr1121.get();
 }
 
 }  // namespace
@@ -507,9 +529,6 @@ extern "C" void app_main(void) {
   g_nrf9151 = driver.chip().nrf9151.get();
   g_nrf9151_uart = driver.bus().nrf9151_uart_bus;
 
-  Wire.set_bus_handle(driver.bus().xl9535_i2c_bus->bus_handle());
-  St25r3916_Init();
-
   esp_err_t result = esp_hosted_init();
   if (result != ESP_OK) {
     printf("esp_hosted_init failed: %s\n", esp_err_to_name(result));
@@ -519,7 +538,12 @@ extern "C" void app_main(void) {
   if (g_lr1121 != nullptr) {
     xTaskCreate(Lr1121RfTask, "Lr1121RfTask", 4 * 1024, NULL, 3, NULL);
   }
-  xTaskCreate(St25r3916RfTask, "St25r3916RfTask", 4 * 1024, NULL, 3, NULL);
+  if (driver.IsSt25r3916Ready()) {
+    xTaskCreate(
+        St25r3916RfTask, "St25r3916RfTask", 4 * 1024, NULL, 3, NULL);
+  } else {
+    printf("st25r3916 init failed\n");
+  }
   xTaskCreate(Esp32c5RfTask, "Esp32c5RfTask", 4 * 1024, NULL, 3, NULL);
   if (g_nrf9151 != nullptr && driver.status().nrf9151.init_flag) {
     xTaskCreate(Nrf9151AtTask, "Nrf9151AtTask", 8 * 1024, NULL, 3, NULL);

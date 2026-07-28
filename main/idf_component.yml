@@ -1,64 +1,33 @@
 dependencies:
+  idf: ">=5.5.4"
+
+  common:
+    path: "../libraries/common"
+    matches:
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
+      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
+
   cpp_bus_driver:
     override_path: "../libraries/cpp_bus_driver"
-
-  radiolib_cpp_bus_driver:
-    override_path: "../libraries/radiolib_cpp_bus_driver"
 
   lilygo_device_driver:
     override_path: "../libraries/lilygo_device_driver"
 
-  private_library:
-    override_path: "../libraries/private_library"
+  usp_cpp_bus_driver:
+    override_path: "../app/lilygo_device_driver_example/libraries/usp_cpp_bus_driver"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SPIFFS_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
+      - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_GLASSES_P4} == True"
+      - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_DISPLAY_P4} == True"
+      - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_DISPLAY_P4_AIR} == True"
+
+  stsw-st25rfal002_cpp_bus_driver:
+    path: "../libraries/stsw-st25rfal002_cpp_bus_driver"
 
   cmd_system:
-    override_path: "../libraries/cmd_system"
+    path: "../libraries/cmd_system"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
-
-  esp_video_app_video:
-    override_path: "../libraries/esp_video_app_video"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_CAMERA} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
-
-  arduino_cpp_bus_driver:
-    override_path: "../libraries/arduino_cpp_bus_driver"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
-
-  lewisxhe/sensorlib:
-    version: "^0.4.1"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_QMC6310N} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_BHI260AP_QMC6310N} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
-
-  ST25R3916:
-    override_path: "../libraries/ST25R3916"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
-
-  NFC-RFAL:
-    override_path: "../libraries/NFC-RFAL"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ST25R3916} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
-
-  lvgl/lvgl:
-    version: "9.5.0"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SCREEN_LVGL_TOUCH_DRAW} == True"
 
   espressif/esp_hosted:
     version: "2.12.3"
@@ -68,7 +37,6 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   espressif/esp_wifi_remote:
     version: ">=1.6.1,<2.0"
@@ -78,26 +46,24 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_SLEEP} == True"
 
   espressif/iperf-cmd:
-    version: "^0.1.1"
+    version: "0.1.1"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
   esp-qa/wifi-cmd:
-    version: "^0.2.2"
+    version: "0.2.2"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
   esp-qa/ping-cmd:
-    version: "^1.0.0"
+    version: "1.0.0"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
   espressif/esp_audio_codec:
-    version: "^2.4.1"
+    version: "2.4.1"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SPIFFS_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
