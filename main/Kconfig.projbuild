@@ -2,29 +2,11 @@ menu "Example Configuration"
 
     choice
         prompt "Select the example to build"
-        default EXAMPLE_BUILD_AXP517
-            config EXAMPLE_BUILD_AXP517
-                bool "axp517"
-            config EXAMPLE_BUILD_ES8389
-                bool "es8389"
-            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI
-                bool "esp_hosted_mcu_sdio_wifi"
+        default EXAMPLE_BUILD_IPERF
             config EXAMPLE_BUILD_IPERF
                 bool "iperf"
-            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE
-                bool "esp_hosted_mcu_sdio_wifi_http_download_file"
-            config EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3
-                bool "esp_hosted_mcu_sdio_wifi_es8389_mp3"
-            config EXAMPLE_BUILD_BHI260AP
-                bool "bhi260ap"
-            config EXAMPLE_BUILD_QMC6310N
-                bool "qmc6310n"
-            config EXAMPLE_BUILD_LR1121_SEND_RECEIVE
-                bool "lr1121_send_receive"
             config EXAMPLE_BUILD_IR_NEC_TRANSCEIVER
                 bool "ir_nec_transceiver"
-            config EXAMPLE_BUILD_ES8389_SD_MP3
-                bool "es8389_sd_mp3"
             config EXAMPLE_BUILD_NRF9151_UART
                 bool "nrf9151_uart"
             config EXAMPLE_BUILD_RF_TEST

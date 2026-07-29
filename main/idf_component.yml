@@ -1,13 +1,6 @@
 dependencies:
   idf: ">=5.5.4"
 
-  common:
-    path: "../libraries/common"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
-
   cpp_bus_driver:
     override_path: "../libraries/cpp_bus_driver"
 
@@ -15,7 +8,7 @@ dependencies:
     override_path: "../libraries/lilygo_device_driver"
 
   usp_cpp_bus_driver:
-    override_path: "../libraries/usp_cpp_bus_driver"
+    path: "../libraries/usp_cpp_bus_driver"
     matches:
       - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_GLASSES_P4} == True"
       - if: "$CONFIG{LILYGO_DEVICE_DRIVER_T_DISPLAY_P4} == True"
@@ -32,19 +25,13 @@ dependencies:
   espressif/esp_hosted:
     version: "2.12.3"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
 
   espressif/esp_wifi_remote:
     version: ">=1.6.1,<2.0"
     matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_HTTP_DOWNLOAD_FILE} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"
 
   espressif/iperf-cmd:
@@ -61,9 +48,3 @@ dependencies:
     version: "1.0.0"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
-
-  espressif/esp_audio_codec:
-    version: "2.4.1"
-    matches:
-      - if: "$CONFIG{EXAMPLE_BUILD_ESP_HOSTED_MCU_SDIO_WIFI_ES8389_MP3} == True"
-      - if: "$CONFIG{EXAMPLE_BUILD_ES8389_SD_MP3} == True"
