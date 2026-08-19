@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "esp_hosted.h"
+#include "esp_hosted_transport_config.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "stsw_st25rfal002_cpp_bus_driver_library.h"
@@ -39,6 +40,20 @@ constexpr TickType_t kNrf9151ButtonPollTicks = pdMS_TO_TICKS(10);
 constexpr TickType_t kNrf9151ButtonDebounceTicks = pdMS_TO_TICKS(300);
 constexpr int kNrf9151TestButton =
     lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot;
+
+esp_err_t SetEsp32c5ResetLevel(void* context, bool level) {
+  auto* driver = static_cast<
+      lilygo_device_driver::TDisplayP4AirDriver*>(context);
+  return driver != nullptr && driver->SetEsp32c5PowerEnabled(level)
+      ? ESP_OK
+      : ESP_FAIL;
+}
+
+bool RegisterEsp32c5ResetCallback(
+    lilygo_device_driver::TDisplayP4AirDriver* driver) {
+  return esp_hosted_sdio_set_reset_callback(
+             SetEsp32c5ResetLevel, driver) == ESP_TRANSPORT_OK;
+}
 
 enum class Nrf9151TestMode {
   kLte,
@@ -508,7 +523,7 @@ void Nrf9151AtTask(void* arg) {
 }
 
 void ConfigLr1121(lilygo_device_driver::TDisplayP4AirDriver& driver) {
-  if (!driver.status().lr1121.init_flag || driver.chip().lr1121 == nullptr) {
+  if (!driver.IsLr1121Ready() || driver.chip().lr1121 == nullptr) {
     printf("lr1121 init failed\n");
     return;
   }
@@ -523,29 +538,54 @@ extern "C" void app_main(void) {
   printf("Ciallo\n");
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
-  driver.Init();
-
-  ConfigLr1121(driver);
-  g_nrf9151 = driver.chip().nrf9151.get();
-  g_nrf9151_uart = driver.bus().nrf9151_uart_bus;
-
-  esp_err_t result = esp_hosted_init();
-  if (result != ESP_OK) {
-    printf("esp_hosted_init failed: %s\n", esp_err_to_name(result));
+  if (!driver.InitMinimal() || !driver.InitXl9535()) {
+    printf("RF control hardware initialization failed\n");
+    return;
   }
-  WifiInitAp();
+
+  driver.InitLr1121();
+  ConfigLr1121(driver);
+  const bool st25r3916_ready =
+      driver.InitSt25r3916() && driver.IsSt25r3916Ready();
+  const bool nrf9151_ready =
+      driver.InitNrf9151() && driver.IsNrf9151Ready();
+  if (nrf9151_ready) {
+    g_nrf9151 = driver.chip().nrf9151.get();
+    g_nrf9151_uart = driver.bus().nrf9151_uart_bus;
+  } else {
+    printf("nrf9151 init failed\n");
+  }
+
+  bool esp32c5_ready = driver.SetEsp32c5PowerEnabled(true);
+  if (!esp32c5_ready) {
+    printf("esp32c5 power enable failed\n");
+  } else if (!RegisterEsp32c5ResetCallback(&driver)) {
+    printf("register esp32c5 reset callback failed\n");
+    esp32c5_ready = false;
+  } else {
+    const esp_err_t result = esp_hosted_init();
+    if (result != ESP_OK) {
+      printf("esp_hosted_init failed: %s\n", esp_err_to_name(result));
+      esp32c5_ready = false;
+    }
+  }
+  if (esp32c5_ready) {
+    WifiInitAp();
+  }
 
   if (g_lr1121 != nullptr) {
     xTaskCreate(Lr1121RfTask, "Lr1121RfTask", 4 * 1024, NULL, 3, NULL);
   }
-  if (driver.IsSt25r3916Ready()) {
+  if (st25r3916_ready) {
     xTaskCreate(
         St25r3916RfTask, "St25r3916RfTask", 4 * 1024, NULL, 3, NULL);
   } else {
     printf("st25r3916 init failed\n");
   }
-  xTaskCreate(Esp32c5RfTask, "Esp32c5RfTask", 4 * 1024, NULL, 3, NULL);
-  if (g_nrf9151 != nullptr && driver.status().nrf9151.init_flag) {
+  if (esp32c5_ready) {
+    xTaskCreate(Esp32c5RfTask, "Esp32c5RfTask", 4 * 1024, NULL, 3, NULL);
+  }
+  if (g_nrf9151 != nullptr && g_nrf9151_uart != nullptr) {
     xTaskCreate(Nrf9151AtTask, "Nrf9151AtTask", 8 * 1024, NULL, 3, NULL);
   }
 }

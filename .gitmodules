@@ -16,3 +16,6 @@
 [submodule "libraries/bhi2xy_sensorapi_cpp_bus_driver"]
 	path = libraries/bhi2xy_sensorapi_cpp_bus_driver
 	url = https://github.com/Llgok/bhi2xy_sensorapi_cpp_bus_driver.git
+[submodule "libraries/esp_hosted"]
+	path = libraries/esp_hosted
+	url = https://github.com/Llgok/esp-hosted-mcu.git

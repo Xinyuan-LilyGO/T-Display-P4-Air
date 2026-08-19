@@ -23,7 +23,7 @@ dependencies:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
 
   espressif/esp_hosted:
-    version: "2.12.3"
+    override_path: "../libraries/esp_hosted"
     matches:
       - if: "$CONFIG{EXAMPLE_BUILD_IPERF} == True"
       - if: "$CONFIG{EXAMPLE_BUILD_RF_TEST} == True"

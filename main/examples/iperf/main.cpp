@@ -12,6 +12,8 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_hosted.h"
+#include "esp_hosted_transport_config.h"
 #include "nvs_flash.h"
 #include "esp_console.h"
 #include "cmd_system.h"
@@ -37,6 +39,24 @@ extern int wifi_cmd_clr_rx_statistics(int argc, char **argv);
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
 #include "esp_extconn.h"
 #endif
+
+namespace {
+
+esp_err_t SetEsp32c5ResetLevel(void* context, bool level) {
+    auto* driver = static_cast<
+        lilygo_device_driver::TDisplayP4AirDriver*>(context);
+    return driver != nullptr && driver->SetEsp32c5PowerEnabled(level)
+        ? ESP_OK
+        : ESP_FAIL;
+}
+
+bool RegisterEsp32c5ResetCallback(
+    lilygo_device_driver::TDisplayP4AirDriver* driver) {
+    return esp_hosted_sdio_set_reset_callback(
+               SetEsp32c5ResetLevel, driver) == ESP_TRANSPORT_OK;
+}
+
+}  // namespace
 
 void iperf_hook_show_wifi_stats(iperf_traffic_type_t type, iperf_status_t status)
 {
@@ -78,7 +98,27 @@ extern "C" void app_main(void)
     printf("Ciallo\n");
 
     auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
-    driver.Init();
+    if (!driver.InitMinimal() || !driver.InitXl9535())
+    {
+        printf("ESP32-C5 control hardware initialization failed\n");
+        return;
+    }
+    if (!driver.SetEsp32c5PowerEnabled(true))
+    {
+        printf("ESP32-C5 power enable failed\n");
+        return;
+    }
+    if (!RegisterEsp32c5ResetCallback(&driver))
+    {
+        printf("Register ESP32-C5 reset callback failed\n");
+        return;
+    }
+    const esp_err_t hosted_result = esp_hosted_init();
+    if (hosted_result != ESP_OK)
+    {
+        printf("esp_hosted_init failed: %s\n", esp_err_to_name(hosted_result));
+        return;
+    }
 
 #if defined(CONFIG_ESP_EXT_CONN_ENABLE) && defined(CONFIG_ESP_HOST_WIFI_ENABLED)
     esp_extconn_config_t ext_config = ESP_EXTCONN_CONFIG_DEFAULT();

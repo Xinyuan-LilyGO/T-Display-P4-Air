@@ -22,6 +22,8 @@ constexpr uint32_t kNecPayloadOneDuration0 = 560;
 constexpr uint32_t kNecPayloadOneDuration1 = 1690;
 constexpr uint32_t kNecRepeatCodeDuration0 = 9000;
 constexpr uint32_t kNecRepeatCodeDuration1 = 2250;
+constexpr uint32_t kInfraredRmtResolutionHz = 1000000;
+constexpr uint32_t kNecDecodeMarginUs = 200;
 
 rmt_channel_handle_t g_rx_channel = nullptr;
 rmt_channel_handle_t g_tx_channel = nullptr;
@@ -41,12 +43,8 @@ bool RmtRxDoneCallback(rmt_channel_handle_t channel,
 }
 
 bool NecCheckInRange(uint32_t signal_duration, uint32_t spec_duration) {
-  return signal_duration <
-             (spec_duration +
-                 lilygo_device_driver::t_display_p4_air::device::infrared::kNecDecodeMargin) &&
-         signal_duration >
-             (spec_duration -
-                 lilygo_device_driver::t_display_p4_air::device::infrared::kNecDecodeMargin);
+  return signal_duration < spec_duration + kNecDecodeMarginUs &&
+         signal_duration > spec_duration - kNecDecodeMarginUs;
 }
 
 bool NecParseLogic0(rmt_symbol_word_t* rmt_nec_symbols) {
@@ -161,8 +159,7 @@ bool RmtInit() {
       .gpio_num =
           static_cast<gpio_num_t>(lilygo_device_driver::t_display_p4_air::gpio::infrared::kRx),
       .clk_src = RMT_CLK_SRC_DEFAULT,
-      .resolution_hz =
-          lilygo_device_driver::t_display_p4_air::device::infrared::kResolutionHz,
+      .resolution_hz = kInfraredRmtResolutionHz,
       .mem_block_symbols = 64,
   };
   esp_err_t result = rmt_new_rx_channel(&rx_channel_cfg, &g_rx_channel);
@@ -193,8 +190,7 @@ bool RmtInit() {
       .gpio_num =
           static_cast<gpio_num_t>(lilygo_device_driver::t_display_p4_air::gpio::infrared::kTx),
       .clk_src = RMT_CLK_SRC_DEFAULT,
-      .resolution_hz =
-          lilygo_device_driver::t_display_p4_air::device::infrared::kResolutionHz,
+      .resolution_hz = kInfraredRmtResolutionHz,
       .mem_block_symbols = 64,
       .trans_queue_depth = 4,
   };
@@ -215,7 +211,7 @@ bool RmtInit() {
   }
 
   ir_nec_encoder_config_t nec_encoder_cfg = {
-      .resolution = lilygo_device_driver::t_display_p4_air::device::infrared::kResolutionHz,
+      .resolution = kInfraredRmtResolutionHz,
   };
   result = rmt_new_ir_nec_encoder(&nec_encoder_cfg, &g_nec_encoder);
   if (result != ESP_OK) {
@@ -243,7 +239,10 @@ extern "C" void app_main(void) {
   printf("Ciallo\n");
 
   auto& driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
-  driver.Init();
+  if (!driver.InitMinimal()) {
+    printf("Minimal board driver initialization failed\n");
+    return;
+  }
 
   cpp_bus_driver::Tool tool;
   tool.SetGpioMode(lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,

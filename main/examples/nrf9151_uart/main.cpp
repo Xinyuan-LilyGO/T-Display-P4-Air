@@ -2,7 +2,7 @@
  * @Description: nrf9151_uart
  * @Author: LILYGO_L
  * @Date: 2026-03-04 11:26:40
- * @LastEditTime: 2026-07-11 14:39:16
+ * @LastEditTime: 2026-08-18 18:05:46
  * @License: GPL 3.0
  */
 #include <memory>
@@ -37,10 +37,12 @@ extern "C" void app_main(void) {
   printf("Ciallo\n");
 
   auto &driver = lilygo_device_driver::TDisplayP4AirDriver::GetInstance();
-  driver.Init();
-
-  if (!driver.status().nrf9151.init_flag) {
-    printf("Nrf9151 init failed\n");
+  if (!driver.InitMinimal() || !driver.InitXl9535()) {
+    printf("Nrf9151 control hardware initialization failed\n");
+    return;
+  }
+  if (!driver.InitNrf9151() || !driver.IsNrf9151Ready()) {
+    printf("Nrf9151 initialization failed\n");
     return;
   }
 
@@ -51,13 +53,33 @@ extern "C" void app_main(void) {
     return;
   }
 
-  uart_driver_install(kPcUartPort, kPcUartBufferSize, 0, 0, NULL, 0);
-  uart_flush_input(kPcUartPort);
+  if (!uart_is_driver_installed(kPcUartPort)) {
+    const esp_err_t install_result =
+        uart_driver_install(kPcUartPort, kPcUartBufferSize, 0, 0, nullptr, 0);
+    if (install_result != ESP_OK) {
+      printf("PC uart driver installation failed: %s\n",
+          esp_err_to_name(install_result));
+      return;
+    }
+  }
+  const esp_err_t flush_result = uart_flush_input(kPcUartPort);
+  if (flush_result != ESP_OK) {
+    printf("PC uart input flush failed: %s\n",
+        esp_err_to_name(flush_result));
+    return;
+  }
 
   std::string command_buffer;
   while (1) {
     size_t pc_uart_length = 0;
-    uart_get_buffered_data_len(kPcUartPort, &pc_uart_length);
+    const esp_err_t buffered_length_result =
+        uart_get_buffered_data_len(kPcUartPort, &pc_uart_length);
+    if (buffered_length_result != ESP_OK) {
+      printf("Get PC uart buffered data length failed: %s\n",
+          esp_err_to_name(buffered_length_result));
+      vTaskDelay(pdMS_TO_TICKS(kLoopDelayMs));
+      continue;
+    }
     if (pc_uart_length > 0) {
       auto buffer = std::make_unique<uint8_t[]>(pc_uart_length);
       const int32_t read_length = uart_read_bytes(kPcUartPort, buffer.get(),
