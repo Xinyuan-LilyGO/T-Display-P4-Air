@@ -5,10 +5,11 @@
  * @LastEditTime: 2026-06-18 15:43:03
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
+#include "lilygo_device_driver.h"
 
 #include <errno.h>
 #include <string.h>
+#include <cstdio>
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "esp_err.h"

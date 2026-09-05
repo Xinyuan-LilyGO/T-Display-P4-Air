@@ -5,10 +5,17 @@
  * @LastEditTime: 2026-08-18 18:05:46
  * @License: GPL 3.0
  */
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <string>
 
-#include "lilygo_device_driver_library.h"
+#include "driver/uart.h"
+#include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "lilygo_device_driver.h"
 
 namespace {
 

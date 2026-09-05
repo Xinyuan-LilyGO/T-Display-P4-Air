@@ -5,21 +5,30 @@
  * @LastEditTime: 2026-07-26 13:02:10
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
+#include "lilygo_device_driver.h"
 
 #include <atomic>
 #include <cstdarg>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "esp_err.h"
+#include "esp_event.h"
 #include "esp_hosted.h"
 #include "esp_hosted_transport_config.h"
 #include "esp_log.h"
+#include "esp_netif.h"
 #include "esp_wifi.h"
-#include "stsw_st25rfal002_cpp_bus_driver_library.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "stsw_st25rfal002_cpp_bus_driver.h"
+#include "usp_cpp_bus_driver.h"
 
 namespace {
 
@@ -128,7 +137,7 @@ bool Lr1121TransmitTest(float freq, float bw, int8_t pwr) {
               .bw = high_frequency ? LR11XX_RADIO_LORA_BW_400
                                    : LR11XX_RADIO_LORA_BW_125,
               .cr = LR11XX_RADIO_LORA_CR_4_7,
-              .ldro = high_frequency ? 0 : 1,
+              .ldro = static_cast<uint8_t>(high_frequency ? 0 : 1),
           },
       .packet =
           {
@@ -302,13 +311,12 @@ void WifiInitAp() {
   ap_config.ap.beacon_interval = 100;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
 
-  const wifi_country_t country = {
-      .cc = "CN",
-      .schan = 1,
-      .nchan = 13,
-      .max_tx_power = 80,
-      .policy = WIFI_COUNTRY_POLICY_AUTO,
-  };
+  wifi_country_t country = {};
+  std::memcpy(country.cc, "CN", sizeof("CN"));
+  country.schan = 1;
+  country.nchan = 13;
+  country.max_tx_power = 80;
+  country.policy = WIFI_COUNTRY_POLICY_AUTO;
   ESP_ERROR_CHECK(esp_wifi_set_country(&country));
   ESP_ERROR_CHECK(esp_wifi_start());
 }
@@ -384,17 +392,17 @@ void ForwardNrf9151NmeaOutput(std::string* pending_data) {
 }
 
 void Nrf9151ButtonTask(void* arg) {
-  pinMode(kNrf9151TestButton, INPUT_PULLUP);
+  cpp_bus_driver::PlatformHal platform_hal;
 
   while (true) {
-    if (digitalRead(kNrf9151TestButton) != LOW) {
+    if (platform_hal.GpioRead(kNrf9151TestButton)) {
       vTaskDelay(kNrf9151ButtonPollTicks);
       continue;
     }
 
     // 按下后等待 300 ms，过滤机械按键抖动。
     vTaskDelay(kNrf9151ButtonDebounceTicks);
-    if (digitalRead(kNrf9151TestButton) != LOW) {
+    if (platform_hal.GpioRead(kNrf9151TestButton)) {
       continue;
     }
 
@@ -404,7 +412,7 @@ void Nrf9151ButtonTask(void* arg) {
     }
 
     // 等待按键释放，确保一次按下只产生一次切换事件。
-    while (digitalRead(kNrf9151TestButton) == LOW) {
+    while (!platform_hal.GpioRead(kNrf9151TestButton)) {
       vTaskDelay(kNrf9151ButtonPollTicks);
     }
     vTaskDelay(kNrf9151ButtonDebounceTicks);
@@ -462,8 +470,15 @@ bool RunNrf9151LteTransmitTests() {
 
 void Nrf9151AtTask(void* arg) {
   printf("Nrf9151AtTask started\n");
+  cpp_bus_driver::PlatformHal platform_hal;
+  if (!platform_hal.SetGpioMode(kNrf9151TestButton,
+          cpp_bus_driver::PlatformHal::GpioMode::kInput,
+          cpp_bus_driver::PlatformHal::GpioStatus::kPullup)) {
+    printf("nrf9151 button GPIO initialization failed\n");
+    vTaskDelete(nullptr);
+    return;
+  }
   g_nrf9151_task_handle = xTaskGetCurrentTaskHandle();
-  pinMode(kNrf9151TestButton, INPUT_PULLUP);
   if (xTaskCreate(Nrf9151ButtonTask, "Nrf9151ButtonTask", 2 * 1024,
           nullptr, 4, &g_nrf9151_button_task_handle) != pdPASS) {
     printf("nrf9151 button task create failed\n");

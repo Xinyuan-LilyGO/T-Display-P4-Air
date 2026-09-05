@@ -11,3 +11,31 @@ endif()
         
 idf_component_register(SRC_DIRS ${project_path} 
                         INCLUDE_DIRS ${project_path})
+
+if(CONFIG_EXAMPLE_BUILD_IR_NEC_TRANSCEIVER)
+    idf_component_optional_requires(PRIVATE
+        esp_driver_rmt
+    )
+endif()
+
+if(CONFIG_EXAMPLE_BUILD_NRF9151_UART)
+    idf_component_optional_requires(PRIVATE
+        esp_driver_uart
+    )
+endif()
+
+if(CONFIG_EXAMPLE_BUILD_IPERF)
+    idf_component_optional_requires(PRIVATE
+        console
+        esp_wifi
+        nvs_flash
+    )
+endif()
+
+if(CONFIG_EXAMPLE_BUILD_RF_TEST)
+    idf_component_optional_requires(PRIVATE
+        esp_event
+        esp_netif
+        esp_wifi
+    )
+endif()

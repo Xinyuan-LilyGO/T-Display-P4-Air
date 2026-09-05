@@ -5,12 +5,18 @@
  * @LastEditTime: 2026-05-24 16:30:00
  * @License: GPL 3.0
  */
-#include "lilygo_device_driver_library.h"
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
 
 #include "driver/rmt_rx.h"
 #include "driver/rmt_tx.h"
 #include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
 #include "ir_nec_encoder.h"
+#include "lilygo_device_driver.h"
 
 namespace {
 
@@ -244,10 +250,14 @@ extern "C" void app_main(void) {
     return;
   }
 
-  cpp_bus_driver::Tool tool;
-  tool.SetGpioMode(lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,
-      cpp_bus_driver::Tool::GpioMode::kInput,
-      cpp_bus_driver::Tool::GpioStatus::kPullup);
+  cpp_bus_driver::PlatformHal platform_hal;
+  if (!platform_hal.SetGpioMode(
+          lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot,
+          cpp_bus_driver::PlatformHal::GpioMode::kInput,
+          cpp_bus_driver::PlatformHal::GpioStatus::kPullup)) {
+    printf("Button GPIO initialization failed\n");
+    return;
+  }
 
   if (!RmtInit()) {
     printf("RmtInit failed\n");
@@ -261,7 +271,8 @@ extern "C" void app_main(void) {
       StartReceive();
     }
 
-    if (!tool.GpioRead(lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot)) {
+    if (!platform_hal.GpioRead(
+            lilygo_device_driver::t_display_p4_air::gpio::button::kEsp32p4Boot)) {
       vTaskDelay(pdMS_TO_TICKS(300));
 
       printf("rmt send start\n");
