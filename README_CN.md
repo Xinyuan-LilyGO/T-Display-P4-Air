@@ -94,14 +94,14 @@ idf.py flash monitor
 
 板级引脚定义位于设备驱动配置文件中：
 
-- [`t_display_p4_air_config.h`](./libraries/lilygo_device_driver/src/device/t_display_p4_air/t_display_p4_air_config.h)
+- [`config.h`](https://github.com/Xinyuan-LilyGO/lilygo_device_driver/blob/main/src/device/t_display_p4_air/config.h)
 
 ## 项目资料
 
 | 文档 | 说明 |
 | --- | --- |
 | [`T-Display-P4-Air v1.0 评估预览版原理图，2026-10-16`](<./project/T-Display-P4-Air_v1.0(Evaluation Preview)_202610161627.pdf>) | 当前 Air 评估原理图 |
-| [`Air 板级驱动配置`](./libraries/lilygo_device_driver/src/device/t_display_p4_air/t_display_p4_air_config.h) | 板级 GPIO 和外设配置 |
+| [`Air 板级驱动配置`](https://github.com/Xinyuan-LilyGO/lilygo_device_driver/blob/main/src/device/t_display_p4_air/config.h) | 板级 GPIO 和外设配置 |
 | [`nRF9151 Serial Modem 指南`](./apps/ncs-serial-modem/README_CN.md) | nRF9151 modem 编译和测试信息 |
 | [`固件记录`](./firmware) | Air 固件版本和测试镜像 |
 

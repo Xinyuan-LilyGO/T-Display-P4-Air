@@ -91,14 +91,14 @@ The component list above is based on the evaluation preview and is subject to ch
 
 Board pin definitions are provided in the device-driver configuration files:
 
-- [`t_display_p4_air_config.h`](./libraries/lilygo_device_driver/src/device/t_display_p4_air/t_display_p4_air_config.h)
+- [`config.h`](https://github.com/Xinyuan-LilyGO/lilygo_device_driver/blob/main/src/device/t_display_p4_air/config.h)
 
 ## Project Materials
 
 | Document | Description |
 | --- | --- |
 | [`T-Display-P4-Air v1.0 Evaluation Preview, 2026-10-16`](<./project/T-Display-P4-Air_v1.0(Evaluation Preview)_202610161627.pdf>) | Current Air evaluation schematic |
-| [`Air board driver configuration`](./libraries/lilygo_device_driver/src/device/t_display_p4_air/t_display_p4_air_config.h) | Board GPIO and peripheral configuration |
+| [`Air board driver configuration`](https://github.com/Xinyuan-LilyGO/lilygo_device_driver/blob/main/src/device/t_display_p4_air/config.h) | Board GPIO and peripheral configuration |
 | [`nRF9151 Serial Modem guide`](./apps/ncs-serial-modem/README.md) | nRF9151 modem build and test information |
 | [`Firmware records`](./firmware) | Air firmware versions and test images |
 
