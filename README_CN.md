@@ -81,8 +81,8 @@ idf.py flash monitor
 | AMOLED 显示和触摸 | 4.1 英寸 AMOLED，568 x 1232，RM69A10 / GT9895 | MIPI-DSI / I2C |
 | 摄像头 | OV2710 | MIPI-CSI |
 | 音频 | ES8390、NS4150B、麦克风和耳机接口 | I2S / 模拟音频 |
-| 运动和磁传感 | BHI260AP、QMC6310U | I2C |
-| NFC/RFID | ST25R3916B | SPI / 射频 |
+| 运动和磁传感 | BHI260AP、QMC6309 | I2C |
+| NFC/RFID | ST25R3916B | I2C |
 | 红外 | VSMY14940、TSOP75338 | GPIO |
 | 振动反馈 | AW86224AFCR | I2C |
 | 存储 | TF 卡插槽 | SDIO 3.0 |

@@ -78,8 +78,8 @@ Open an example link above for the current source and supported example list.
 | AMOLED display and touch | 4.1-inch AMOLED, 568 x 1232, RM69A10 / GT9895 | MIPI-DSI / I2C |
 | Camera | OV2710 | MIPI-CSI |
 | Audio | ES8390, NS4150B, microphone and headphone jack | I2S / analog |
-| Motion and magnetic sensing | BHI260AP, QMC6310U | I2C |
-| NFC/RFID | ST25R3916B | SPI / RF |
+| Motion and magnetic sensing | BHI260AP, QMC6309 | I2C |
+| NFC/RFID | ST25R3916B | I2C |
 | Infrared | VSMY14940, TSOP75338 | GPIO |
 | Haptic feedback | AW86224AFCR | I2C |
 | Storage | TF card slot | SDIO 3.0 |
